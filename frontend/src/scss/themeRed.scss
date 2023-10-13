@@ -1,0 +1,24 @@
+.themeRed {
+  :deep(.ant-menu-item) {
+    background-color: #5F070A;
+    color: #fffdef;
+    border-radius: 0 20px 20px 0;
+    margin: 0 10px 10px 0;
+    font-size: 14px;
+  }
+  :deep(.ant-menu-item:active) {
+    background-color: #94171b !important;
+  }
+  :deep(.ant-menu-item-selected) {
+    background-color: #B0252A;
+  }
+  :deep(.ant-menu){
+    background-color: #77090D;
+  }
+  :deep(.logo){
+    background-color: #77090D;
+  }
+  :deep(.ant-layout-sider){
+    background-color: #77090D;
+  }
+}

@@ -1,0 +1,61 @@
+
+server:
+  port: 9000
+spring:
+  application:
+    #应用名称，可选
+    name: system
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/sysdata2?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    username: u_shebei
+    password: 123456
+#    druid:
+#      initial-size: 5
+#      max-active: 20
+#      min-idle: 5
+#      time-between-eviction-runs-millis: 60000
+#      max-wait: 60000
+#      min-evictable-idle-time-millis: 300000
+#      test-while-idle: true
+#      testOnBorrow: false
+#      test-on-return: false
+#      pool-prepared-statements: true
+#      max-pool-prepared-statement-per-connection-size: 20
+#      #配置监控统计拦截的filters，stat:监控统计、log4j：日志记录、wall：防御sql注入
+#      filters: stat,wall
+#      use-global-data-source-stat: true
+#      connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
+#      #SQL监控
+#      stat-view-servlet:
+#        enabled: true
+#        login-username: admin
+#        login-password: 123456
+#        reset-enable: false
+#        url-pattern: /druid/*
+#      #web拦截
+#      web-stat-filter:
+#        url-pattern: /*
+#        exclusions: "*.js,*.gif,*.jpg,*.css,/druid/*"
+#        enabled: true
+#        session-stat-enable: true       # 开启session统计功能
+#  redis:
+#    host: localhost
+#    port: 6379
+#    database: 0
+#  cache:
+#    redis:
+#      time-to-live: 600000 #设置过期时间
+mybatis-plus:
+  configuration:
+    #在映射实体或者属性时，将数据库中表名和字段名中的下划线去掉，按照驼峰命名法映射
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: ASSIGN_ID
+    banner: off
+logging:
+  level:
+    root: off
+    sql: off
+    web: off
