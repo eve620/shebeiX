@@ -17,18 +17,6 @@ export default function getInstance() {
 }
 
 class Instance {
-    constructor() {
-        this.user = null;
-    }
-
-    getUser() {
-        return this.user;
-    }
-
-    setUser(user) {
-        this.user = user;
-    }
-
     //Auth API
     whoami() {
         return $axios({
@@ -64,6 +52,13 @@ class Instance {
         })
     }
 
+    deleteItemById(id) {
+        return $axios({
+            url: `/item/${id}`,
+            method: 'delete'
+        })
+    }
+
     //Lab API
     getLabList(input) {
         return $axios({
@@ -75,6 +70,13 @@ class Instance {
         })
     }
 
+    deleteLabById(id) {
+        return $axios({
+            url: `/lab/${id}`,
+            method: 'delete'
+        })
+    }
+
     //User API
     getUserList(input) {
         return $axios({
@@ -82,7 +84,26 @@ class Instance {
             method: 'get',
             params: {
                 input,
-                getAdmin:false
+                getAdmin: false
+            }
+        })
+    }
+
+    deleteUserById(id) {
+        return $axios({
+            url: `/user/${id}`,
+            method: 'delete'
+        })
+    }
+
+    // 修改密码
+    changeUserPassword(id, params) {
+        return $axios({
+            url: '/user',
+            method: 'put',
+            data: {
+                userId: id,
+                userPassword: params
             }
         })
     }
@@ -94,7 +115,7 @@ class Instance {
             method: 'get',
             params: {
                 input,
-                getAdmin:true
+                getAdmin: true
             }
         })
     }

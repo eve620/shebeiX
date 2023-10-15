@@ -19,7 +19,7 @@
                 </a-menu-item>
             </a-menu>
         </a-layout-sider>
-        <a-layout>
+        <a-layout style="min-width: 1000px">
             <a-layout-header :style="{ background: '#fff' }">
                 <TopBar :userInfo="user" :title="menuList.find(item => item.id === selectedKeys[0]).name"/>
             </a-layout-header>
@@ -29,7 +29,7 @@
                 </div>
             </a-layout-content>
             <a-layout-footer style="text-align: center">
-                开发维护：西安电子科技大电子工程学院
+                开发维护：西安电子科技大学电子工程学院
             </a-layout-footer>
         </a-layout>
     </a-layout>
@@ -70,7 +70,7 @@ onBeforeMount(() => {
         }
     })
 })
-let user = reactive({roleId: undefined, userJobnumber: undefined, userName: undefined});
+let user = reactive({userId: undefined, roleId: undefined, userJobnumber: undefined, userName: undefined});
 const isAdmin = ref();
 const isShow = ref(0)
 const url = ref(useRoute().path)

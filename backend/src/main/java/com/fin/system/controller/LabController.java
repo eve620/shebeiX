@@ -87,9 +87,9 @@ public class LabController {
         queryWrapper.eq(Lab::getLabId, id);
         Boolean res = labService.remove(queryWrapper);
         if (res) {
-            return R.success("数据删除成功");
+            return R.success("实验室删除成功");
         }
-        return R.error("数据删除失败");
+        return R.error("实验室删除失败");
     }
 
     //编辑信息

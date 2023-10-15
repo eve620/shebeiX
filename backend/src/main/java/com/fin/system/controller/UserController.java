@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.List;
 
+import static com.fin.system.commen.MD5Util.computeMD5Hash;
+
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -37,6 +39,8 @@ public class UserController {
     public R<User> login(HttpServletRequest request, @RequestBody User user) {
         System.out.println(request.getSession());
         String password = user.getUserPassword();
+        //md5处理
+        password = computeMD5Hash(password);
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getUserAccount, user.getUserAccount());
         User emp = userService.getOne(queryWrapper);
@@ -46,7 +50,7 @@ public class UserController {
         if (!emp.getUserPassword().equals(password)) {
             return R.error("密码错误");
         }
-        UserInfo userInfo = new UserInfo(emp.getUserAccount(), emp.getUserName(), emp.getRoleId());
+        UserInfo userInfo = new UserInfo(emp.getUserId(),emp.getUserAccount(), emp.getUserName(), emp.getRoleId());
         request.getSession().setAttribute("userInfo", userInfo);
         return R.success(emp);
     }
@@ -113,16 +117,20 @@ public class UserController {
         queryWrapper.eq(User::getUserId, id);
         Boolean res = userService.remove(queryWrapper);
         if (res) {
-            return R.success("数据删除成功");
+            return R.success("用户删除成功");
         }
-        return R.error("数据删除失败");
+        return R.error("用户删除失败");
     }
 
     //编辑信息
     @PutMapping
     public R<String> update(HttpServletRequest request, @RequestBody User user) {
-        userService.updateById(user);
-        return R.success("信息修改成功");
+        user.setUserPassword(computeMD5Hash(user.getUserPassword()));
+        Boolean res = userService.updateById(user);
+        if (res){
+            return R.success("信息修改成功");
+        }
+        return R.error("信息修改失败");
     }
 
     //导出Excel

@@ -72,9 +72,9 @@ public class ItemController {
         queryWrapper.eq(Item::getItemId, id);
         Boolean res = itemService.remove(queryWrapper);
         if (res) {
-            return R.success("数据删除成功");
+            return R.success("设备删除成功");
         }
-        return R.error("数据删除失败");
+        return R.error("设备删除失败");
     }
 
     //编辑信息

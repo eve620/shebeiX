@@ -21,22 +21,22 @@ const router = createRouter({
                 {
                     path: '/home/item',
                     name: 'item',
-                    component: () => import('@/components/Item/Item.vue'),
+                    component: () => import('@/pages/Item/Item.vue'),
                 },
                 {
                     path: '/home/lab',
                     name: 'lab',
-                    component: () => import('@/components/Lab/Lab.vue'),
+                    component: () => import('@/pages/Lab/Lab.vue'),
                 },
                 {
                     path: '/home/user',
                     name: 'user',
-                    component: () => import('@/components/User/User.vue'),
+                    component: () => import('@/pages/User/User.vue'),
                 },
                 {
                     path: '/home/manager',
                     name: 'manager',
-                    component: () => import('@/components/Manager/Manager.vue'),
+                    component: () => import('@/pages/Manager/Manager.vue'),
                 },
             ]
         },
