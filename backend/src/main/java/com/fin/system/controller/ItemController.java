@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -85,44 +86,15 @@ public class ItemController {
     }
 
     //导出Excel
-    @GetMapping("download")
-    public void download(HttpServletResponse response, String name) throws IOException {
-        LambdaQueryWrapper<Item> queryWrapper = new LambdaQueryWrapper();
-        //添加过滤条件
-        queryWrapper.like(StringUtils.isNotEmpty(name), Item::getItemName, name);
-        //添加排序条件
-        queryWrapper.orderByDesc(Item::getUpdateTime);
-
-        List<Item> data = itemService.list(queryWrapper);
-        // 这里注意 有同学反应使用swagger 会导致各种问题，请直接用浏览器或者用postman
+    @PostMapping("/download")
+    public void download(HttpServletResponse response, @RequestBody List<Item> items) throws IOException {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setCharacterEncoding("utf-8");
-        // 这里URLEncoder.encode可以防止中文乱码 当然和easy excel没有关系
-        String fileName = URLEncoder.encode("测试", StandardCharsets.UTF_8).replaceAll("\\+", "%20");
-        response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + fileName + ".xlsx");
-        EasyExcel.write(response.getOutputStream(), Item.class).sheet("在库资产").doWrite(data);
-    }
-
-    @GetMapping("userdownload")
-    public void userdownload(HttpServletRequest request, HttpServletResponse response, String name) throws IOException {
-        User user = (User) request.getSession().getAttribute("userInfo");
-        String userName = user.getUserName();
-
-        LambdaQueryWrapper<Item> queryWrapper = new LambdaQueryWrapper();
-        //添加过滤条件
-        queryWrapper.like(StringUtils.isNotEmpty(name), Item::getItemName, name);
-        //添加查询条件
-        queryWrapper.eq(Item::getUserName, userName);
-        //添加排序条件
-        queryWrapper.orderByDesc(Item::getUpdateTime);
-
-        List<Item> data = itemService.list(queryWrapper);
-        // 这里注意 有同学反应使用swagger 会导致各种问题，请直接用浏览器或者用postman
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setCharacterEncoding("utf-8");
-        // 这里URLEncoder.encode可以防止中文乱码 当然和easyexcel没有关系
-        String fileName = URLEncoder.encode("测试", "UTF-8").replaceAll("\\+", "%20");
-        response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + fileName + ".xlsx");
-        EasyExcel.write(response.getOutputStream(), Item.class).sheet("在库资产").doWrite(data);
+        try (OutputStream outputStream = response.getOutputStream()) {
+            EasyExcel.write(outputStream, Item.class).sheet("items").doWrite(items); // 请替换为你自己的数据获取逻辑
+            outputStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -2,7 +2,7 @@
     <div class="loading" v-show="!isShow">
         <a-spin size="large"/>
     </div>
-    <a-layout style="height: auto;min-height: 100vh" v-show="isShow" :class={themeRed:!isAdmin}>
+    <a-layout style="height: auto;min-height: 100vh" v-show="isShow" :class={themeRed:!themeId}>
         <a-layout-sider
                 breakpoint="lg"
                 collapsed-width="0"
@@ -21,7 +21,7 @@
         </a-layout-sider>
         <a-layout style="min-width: 1000px">
             <a-layout-header :style="{ background: '#fff' }">
-                <TopBar :userInfo="user" :title="menuList.find(item => item.id === selectedKeys[0]).name"/>
+                <TopBar @changeTheme="changeTheme" :userInfo="user" :title="menuList.find(item => item.id === selectedKeys[0]).name"/>
             </a-layout-header>
             <a-layout-content :style="{ margin: '24px 16px 0' }">
                 <div :style="{ padding: '24px', background: '#fff', minHeight: '360px' }">
@@ -46,9 +46,9 @@ onBeforeMount(() => {
     instance.whoami().then(res => {
         if (res.data.code === 1) {
             user = res.data.data;
-            isAdmin.value = user.roleId;
+            themeId.value = user.roleId;
             isShow.value = 1;
-            if (isAdmin.value) {
+            if (user.roleId) {
                 menuList.push(
                     {
                         id: '3',
@@ -71,7 +71,10 @@ onBeforeMount(() => {
     })
 })
 let user = reactive({userId: undefined, roleId: undefined, userJobnumber: undefined, userName: undefined});
-const isAdmin = ref();
+const themeId = ref();
+const changeTheme = () => {
+    themeId.value = !themeId.value;
+}
 const isShow = ref(0)
 const url = ref(useRoute().path)
 const menuList = reactive([

@@ -16,7 +16,7 @@
             </a-form-item>
         </a-form>
     </a-modal>
-    <OperationBar @add="addUser" v-show="isShow"/>
+    <OperationBar @add="addUser" @export="download" v-show="isShow"/>
     <a-modal v-model:open="isEditShow" ok-text="确定" cancel-text="取消" @ok="onEditOk"
              @cancel="onEditCancel" title="编辑">
         <a-form :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
@@ -53,6 +53,7 @@ import getInstance from "@/sdk/Instance.js";
 import OperationBar from "@/components/OperationBar/OperationBar.vue";
 import Delete from "@/components/Delete/Delete.vue";
 import {message} from "ant-design-vue";
+import downloadExcel from "@/sdk/exportToExcel.js";
 
 const instance = getInstance()
 let user;
@@ -128,6 +129,9 @@ onBeforeMount(() => {
         isShow.value = true;
     })
 })
+const download = () => {
+    downloadExcel("/user",dataSource.value,"教师表.xlsx")
+}
 const input = ref('')
 const dataSource = ref();
 const isShow = ref(false);
@@ -146,8 +150,8 @@ const columns = [
         title: '权限',
         dataIndex: 'roleId',
         width: '40%',
-        customRender(text){
-            return text.value===1?'管理员':'教师'
+        customRender(text) {
+            return text.value === 1 ? '管理员' : '教师'
         }
     },
     {

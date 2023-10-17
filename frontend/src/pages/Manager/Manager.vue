@@ -16,7 +16,7 @@
             </a-form-item>
         </a-form>
     </a-modal>
-    <OperationBar @add="addManager" v-show="isShow"/>
+    <OperationBar @add="addManager" @export="download" v-show="isShow"/>
     <a-modal v-model:open="isEditShow" ok-text="确定" cancel-text="取消" @ok="onEditOk"
              @cancel="onEditCancel" title="编辑">
         <a-form :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
@@ -53,6 +53,7 @@ import getInstance from "@/sdk/Instance.js";
 import OperationBar from "@/components/OperationBar/OperationBar.vue";
 import Delete from "@/components/Delete/Delete.vue";
 import {message} from "ant-design-vue";
+import downloadExcel from "@/sdk/exportToExcel.js";
 
 const instance = getInstance()
 let user;
@@ -133,6 +134,9 @@ onBeforeMount(() => {
         isShow.value = true;
     })
 })
+const download = () => {
+    downloadExcel("/user",dataSource.value,"管理员表.xlsx")
+}
 const input = ref('')
 const dataSource = ref();
 const isShow = ref(false);

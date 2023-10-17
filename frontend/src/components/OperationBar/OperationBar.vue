@@ -7,7 +7,7 @@
         </a-input>
         <div class="operation">
             <a-button type="primary" @click="onAdd">添加</a-button>
-            <a-button class="export-excel">导出Excel</a-button>
+            <a-button class="export-excel" @click="onExport">导出Excel</a-button>
         </div>
     </div>
 </template>
@@ -15,11 +15,14 @@
 <script setup>
 import {ref} from "vue";
 
-const emit = defineEmits(['add']);
+const emit = defineEmits(['add', 'export']);
 const searchInput = ref('');
 
 const onAdd = () => {
     emit('add');
+};
+const onExport = () => {
+    emit('export');
 };
 </script>
 

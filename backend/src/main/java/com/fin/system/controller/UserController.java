@@ -12,10 +12,13 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.function.Function;
@@ -58,7 +61,7 @@ public class UserController {
         return R.success(emp);
     }
 
-    @PostMapping("logout")
+    @PostMapping("/logout")
     public R<String> logout(HttpServletRequest request) {
         request.getSession().invalidate();
         return R.success("退出成功");
@@ -149,21 +152,15 @@ public class UserController {
     }
 
     //导出Excel
-    @GetMapping("download")
-    public void download(HttpServletResponse response, String name) throws IOException {
-        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper();
-        //添加过滤条件
-        queryWrapper.like(StringUtils.isNotEmpty(name), User::getUserName, name);
-        //添加排序条件
-        queryWrapper.orderByDesc(User::getUpdateTime);
-
-        List<User> data = userService.list(queryWrapper);
-        // 这里注意 有同学反应使用swagger 会导致各种问题，请直接用浏览器或者用postman
+    @PostMapping("/download")
+    public void download(HttpServletResponse response, @RequestBody List<User> users) throws IOException {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setCharacterEncoding("utf-8");
-        // 这里URLEncoder.encode可以防止中文乱码 当然和easyexcel没有关系
-        String fileName = URLEncoder.encode("测试", "UTF-8").replaceAll("\\+", "%20");
-        response.setHeader("Content-disposition", "attachment;filename*=utf-8''" + fileName + ".xlsx");
-        EasyExcel.write(response.getOutputStream(), User.class).sheet("用户").doWrite(data);
+        try (OutputStream outputStream = response.getOutputStream()) {
+            EasyExcel.write(outputStream, User.class).sheet("users").doWrite(users); // 请替换为你自己的数据获取逻辑
+            outputStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

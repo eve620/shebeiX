@@ -17,6 +17,16 @@ export default function getInstance() {
 }
 
 class Instance {
+    //Common API
+    exportExcel(path, data) {
+        return $axios({
+            url: path + `/download`,
+            method: 'post',
+            responseType: 'blob',
+            data
+        })
+    }
+
     //Auth API
     whoami() {
         return $axios({
@@ -109,7 +119,7 @@ class Instance {
         })
     }
 
-    getAllLabList () {
+    getAllLabList() {
         return $axios({
             url: '/lab/list',
             method: 'get',
@@ -168,7 +178,7 @@ class Instance {
         })
     }
 
-    getAllUserList () {
+    getAllUserList() {
         return $axios({
             url: '/user/list',
             method: 'get'
@@ -197,4 +207,5 @@ class Instance {
             }
         })
     }
+
 }
