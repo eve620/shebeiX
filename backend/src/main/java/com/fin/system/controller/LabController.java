@@ -15,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.List;
+import java.util.function.Function;
 
 @RestController
 @RequestMapping("/lab")
@@ -43,23 +44,14 @@ public class LabController {
 
     //查询实验室列表
     @GetMapping("/list")
-    public R<List<Lab>> list() {
-        LambdaQueryWrapper<Lab> queryWrapper = new LambdaQueryWrapper<>();
-        List<Lab> list = labService.list(queryWrapper);
-        return R.success(list);
+    public R<List<String>> list() {
+        //构造条件构造器
+        LambdaQueryWrapper<Lab> queryWrapper = new LambdaQueryWrapper();
+        queryWrapper.select(Lab::getLabName);
+        Function<Object, String> f = (o -> o.toString());
+        List<String> labList = labService.listObjs(queryWrapper, f);
+        return R.success(labList);
     }
-
-    @GetMapping("/userlist")
-    public R<List<Lab>> userlist(HttpServletRequest request) {
-        User user = (User) request.getSession().getAttribute("userInfo");
-        String userAccount = user.getUserAccount();
-        LambdaQueryWrapper<Lab> queryWrapper = new LambdaQueryWrapper<>();
-        //添加查询条件
-        queryWrapper.eq(Lab::getUserAccount, userAccount);
-        List<Lab> list = labService.list(queryWrapper);
-        return R.success(list);
-    }
-
 
     //根据id查询管理员信息
     @GetMapping("/{id}")

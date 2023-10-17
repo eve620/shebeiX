@@ -5,8 +5,6 @@
                 <SearchOutlined/>
             </template>
         </a-input>
-        <a-modal v-model:open="isAddShow" ok-text="确定" cancel-text="取消" @ok="onAddOk" @cancel="onAddCancel" title="添加">
-        </a-modal>
         <div class="operation">
             <a-button type="primary" @click="onAdd">添加</a-button>
             <a-button class="export-excel">导出Excel</a-button>
@@ -17,16 +15,11 @@
 <script setup>
 import {ref} from "vue";
 
+const emit = defineEmits(['add']);
 const searchInput = ref('');
-const isAddShow = ref(false);
-const onAddOk = () => {
-    isAddShow.value = false;
-};
-const onAddCancel = () => {
-    isAddShow.value = false;
-};
+
 const onAdd = () => {
-    isAddShow.value = true;
+    emit('add');
 };
 </script>
 

@@ -6,15 +6,19 @@ import com.fin.system.commen.R;
 import com.fin.system.entity.User;
 import com.fin.system.entity.UserInfo;
 import com.fin.system.service.UserService;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.List;
+import java.util.function.Function;
 
 import static com.fin.system.commen.MD5Util.computeMD5Hash;
 
@@ -37,7 +41,6 @@ public class UserController {
     //登录
     @PostMapping("/login")
     public R<User> login(HttpServletRequest request, @RequestBody User user) {
-        System.out.println(request.getSession());
         String password = user.getUserPassword();
         //md5处理
         password = computeMD5Hash(password);
@@ -50,14 +53,13 @@ public class UserController {
         if (!emp.getUserPassword().equals(password)) {
             return R.error("密码错误");
         }
-        UserInfo userInfo = new UserInfo(emp.getUserId(),emp.getUserAccount(), emp.getUserName(), emp.getRoleId());
+        UserInfo userInfo = new UserInfo(emp.getUserId(), emp.getUserAccount(), emp.getUserName(), emp.getRoleId());
         request.getSession().setAttribute("userInfo", userInfo);
         return R.success(emp);
     }
 
     @PostMapping("logout")
     public R<String> logout(HttpServletRequest request) {
-        System.out.println(request.getSession());
         request.getSession().invalidate();
         return R.success("退出成功");
     }
@@ -70,11 +72,10 @@ public class UserController {
         queryWrapper.like(StringUtils.isNotEmpty(input), User::getUserName, input);
         //添加排序条件
         queryWrapper.orderByDesc(User::getUpdateTime);
-        System.out.println(getAdmin);
-        if(getAdmin){
+        if (getAdmin) {
             //添加查询条件
             queryWrapper.eq(User::getRoleId, 1);
-        }else {
+        } else {
             //添加查询条件
             queryWrapper.eq(User::getRoleId, 0);
         }
@@ -84,10 +85,13 @@ public class UserController {
     }
 
     @GetMapping("/list")
-    public R<List<User>> list() {
+    public R<List<String>> list() {
         //构造条件构造器
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper();
-        List<User> userList = userService.list(queryWrapper);
+        queryWrapper.select(User::getUserName);
+        Function<Object, String> f = (o -> o.toString());
+        List<String> userList = userService.listObjs(queryWrapper, f);
+        System.out.println(userList);
         return R.success(userList);
     }
 
@@ -106,7 +110,11 @@ public class UserController {
     //新增教师
     @PostMapping
     public R<String> save(HttpServletRequest request, @RequestBody User user) {
+        user.setUserPassword(computeMD5Hash(user.getUserPassword()));
         userService.save(user);
+        if (user.getRoleId() == 1) {
+            return R.success("新增管理员成功");
+        }
         return R.success("新增教师成功");
     }
 
@@ -125,9 +133,16 @@ public class UserController {
     //编辑信息
     @PutMapping
     public R<String> update(HttpServletRequest request, @RequestBody User user) {
-        user.setUserPassword(computeMD5Hash(user.getUserPassword()));
+        if (user.getUserPassword() != null) {
+            user.setUserPassword(computeMD5Hash(user.getUserPassword()));
+        }
+        //更新session，用以更新顶部栏
+        UserInfo before = (UserInfo) request.getSession().getAttribute("userInfo");
+        if (before.userId == user.getUserId()) {
+            request.getSession().setAttribute("userInfo", new UserInfo(user.getUserId(), user.getUserAccount(), user.getUserName(), user.getRoleId()));
+        }
         Boolean res = userService.updateById(user);
-        if (res){
+        if (res) {
             return R.success("信息修改成功");
         }
         return R.error("信息修改失败");

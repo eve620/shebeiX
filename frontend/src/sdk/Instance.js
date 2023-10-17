@@ -59,6 +59,22 @@ class Instance {
         })
     }
 
+    addItem(params) {
+        return $axios({
+            url: '/item',
+            method: 'post',
+            data: {...params}
+        })
+    }
+
+    editItem(params) {
+        return $axios({
+            url: '/item',
+            method: 'put',
+            data: {...params}
+        })
+    }
+
     //Lab API
     getLabList(input) {
         return $axios({
@@ -74,6 +90,29 @@ class Instance {
         return $axios({
             url: `/lab/${id}`,
             method: 'delete'
+        })
+    }
+
+    addLab(params) {
+        return $axios({
+            url: '/lab',
+            method: 'post',
+            data: {...params}
+        })
+    }
+
+    editLab(params) {
+        return $axios({
+            url: '/lab',
+            method: 'put',
+            data: {...params}
+        })
+    }
+
+    getAllLabList () {
+        return $axios({
+            url: '/lab/list',
+            method: 'get',
         })
     }
 
@@ -96,7 +135,6 @@ class Instance {
         })
     }
 
-    // 修改密码
     changeUserPassword(id, params) {
         return $axios({
             url: '/user',
@@ -108,6 +146,35 @@ class Instance {
         })
     }
 
+    addUser(params) {
+        return $axios({
+            url: '/user',
+            method: 'post',
+            data: {
+                ...params,
+                roleId: 0
+            }
+        })
+    }
+
+    editUser(params) {
+        return $axios({
+            url: '/user',
+            method: 'put',
+            data: {
+                ...params,
+                userPassword: null
+            }
+        })
+    }
+
+    getAllUserList () {
+        return $axios({
+            url: '/user/list',
+            method: 'get'
+        })
+    }
+
     //Manager API
     getManagerList(input) {
         return $axios({
@@ -116,6 +183,17 @@ class Instance {
             params: {
                 input,
                 getAdmin: true
+            }
+        })
+    }
+
+    addManager(params) {
+        return $axios({
+            url: '/user',
+            method: 'post',
+            data: {
+                ...params,
+                roleId: 1
             }
         })
     }
