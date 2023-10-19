@@ -7,7 +7,9 @@
             </a-form-item>
             <a-form-item name="userName" label="管理人" :rules="[{ required: true, message: '请选择管理人' }]">
                 <a-select v-model:value="formData.userName" placeholder="请选择">
-                    <a-select-option v-for="item in userList" :value="item.userName" @click="setAccount(item.userAccount)">{{item.userName}}</a-select-option>
+                    <a-select-option v-for="item in userList" :value="item.userName"
+                                     @click="setAccount(item.userAccount)">{{ item.userName }}
+                    </a-select-option>
                 </a-select>
             </a-form-item>
             <a-form-item label="工资号">
@@ -27,7 +29,9 @@
             </a-form-item>
             <a-form-item label="管理人">
                 <a-select v-model:value="formData.userName" placeholder="请选择">
-                    <a-select-option v-for="item in userList" :value="item.userName" @click="setAccount(item.userAccount)">{{item.userName}}</a-select-option>
+                    <a-select-option v-for="item in userList" :value="item.userName"
+                                     @click="setAccount(item.userAccount)">{{ item.userName }}
+                    </a-select-option>
                 </a-select>
             </a-form-item>
             <a-form-item label="工资号">
@@ -58,18 +62,19 @@ import {message} from "ant-design-vue";
 import downloadExcel from "@/sdk/exportToExcel.js";
 import router from "@/router.js";
 import {encryptByAES} from "@/sdk/utils.js";
+
 const instance = getInstance()
 let user;
 let userList;
 const formData = ref({});
 const isAdmin = ref(false);
 const isAddShow = ref(false);
-const setAccount=(num)=>{
-    formData.value.userAccount=num;
+const setAccount = (num) => {
+    formData.value.userAccount = num;
 }
 const addLab = async () => {
     formData.value = {};
-    if(userList === undefined){
+    if (userList === undefined) {
         const userRes = await instance.getAllUserList()
         userList = userRes.data.data;
     }
@@ -85,7 +90,7 @@ const searchLab = (searchInput) => {
 };
 //查看实验室详情
 const checkDetail = (labName) => {
-    router.push({name: 'labDetail', query: { id: encryptByAES(labName) }})
+    router.push({name: 'labDetail', query: {id: encryptByAES(labName)}})
 }
 const formRef = ref();
 const onAddOk = () => {
@@ -118,7 +123,7 @@ const onAddCancel = () => {
 const isEditShow = ref(false);
 const onEdit = async (data) => {
     formData.value = JSON.parse(JSON.stringify(data));
-    if(userList === undefined){
+    if (userList === undefined) {
         const userRes = await instance.getAllUserList()
         userList = userRes.data.data;
     }
@@ -165,8 +170,10 @@ const deleteLab = (labId) => {
 }
 onBeforeMount(() => {
     instance.whoami().then(res => {
-        user = res.data.data;
-        isAdmin.value = user.roleId;
+        if (res.data.code === 1) {
+            user = res.data.data;
+            isAdmin.value = user.roleId;
+        }
     })
     instance.getLabList().then(res => {
         dataSource.value = res.data.data;
@@ -174,7 +181,7 @@ onBeforeMount(() => {
     })
 })
 const download = () => {
-    downloadExcel("/lab",dataSource.value,"实验室表.xlsx")
+    downloadExcel("/lab", dataSource.value, "实验室表.xlsx")
 }
 const dataSource = ref();
 const isShow = ref(false);

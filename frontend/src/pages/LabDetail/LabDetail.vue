@@ -34,9 +34,9 @@
             </a-form-item>
             <a-form-item label="实验室">
                 <a-input v-model:value="labName" :disabled="true"/>
-<!--                <a-select v-model:value="formData.labName" placeholder="请选择">-->
-<!--                    <a-select-option v-for="item in labList" :value="item">{{ item }}</a-select-option>-->
-<!--                </a-select>-->
+                <!--                <a-select v-model:value="formData.labName" placeholder="请选择">-->
+                <!--                    <a-select-option v-for="item in labList" :value="item">{{ item }}</a-select-option>-->
+                <!--                </a-select>-->
             </a-form-item>
             <a-form-item name="itemStatus" label="状态" :rules="[{ required: true, message: '请选择'}]">
                 <a-radio-group v-model:value="formData.itemStatus">
@@ -239,8 +239,10 @@ const deleteItem = (itemId) => {
 }
 onBeforeMount(() => {
     instance.whoami().then(res => {
-        user = res.data.data;
-        isAdmin.value = user.roleId;
+        if (res.data.code === 1) {
+            user = res.data.data;
+            isAdmin.value = user.roleId;
+        }
     })
     instance.getItemList(null, labName).then(res => {
         dataSource.value = res.data.data;
@@ -248,7 +250,7 @@ onBeforeMount(() => {
     })
 })
 const download = () => {
-    downloadExcel("/item", dataSource.value, "资产表.xlsx")
+    downloadExcel("/item", dataSource.value, labName + "资产详情表.xlsx")
 }
 const dataSource = ref();
 const isShow = ref(false);

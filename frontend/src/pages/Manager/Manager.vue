@@ -149,8 +149,10 @@ const deleteManager = (userId) => {
 }
 onBeforeMount(() => {
     instance.whoami().then(res => {
-        user = res.data.data;
-        isAdmin.value = user.roleId;
+        if (res.data.code === 1) {
+            user = res.data.data;
+            isAdmin.value = user.roleId;
+        }
     })
     instance.getManagerList().then(res => {
         dataSource.value = res.data.data;
