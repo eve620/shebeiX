@@ -2,6 +2,7 @@ package com.fin.system.controller;
 
 import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fin.system.commen.R;
 import com.fin.system.entity.User;
 import com.fin.system.entity.UserInfo;
@@ -12,14 +13,11 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
 import java.util.List;
 import java.util.function.Function;
 
@@ -88,13 +86,11 @@ public class UserController {
     }
 
     @GetMapping("/list")
-    public R<List<String>> list() {
+    public R<List<User>> list() {
         //构造条件构造器
-        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper();
-        queryWrapper.select(User::getUserName);
-        Function<Object, String> f = (o -> o.toString());
-        List<String> userList = userService.listObjs(queryWrapper, f);
-        System.out.println(userList);
+        QueryWrapper<User> queryWrapper = new QueryWrapper();
+        queryWrapper.select("user_name", "user_account");
+        List<User> userList = userService.list(queryWrapper);
         return R.success(userList);
     }
 
@@ -157,7 +153,7 @@ public class UserController {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setCharacterEncoding("utf-8");
         try (OutputStream outputStream = response.getOutputStream()) {
-            EasyExcel.write(outputStream, User.class).sheet("users").doWrite(users); // 请替换为你自己的数据获取逻辑
+            EasyExcel.write(outputStream, User.class).sheet("users").doWrite(users);
             outputStream.flush();
         } catch (IOException e) {
             e.printStackTrace();

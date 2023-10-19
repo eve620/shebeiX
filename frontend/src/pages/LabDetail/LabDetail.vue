@@ -26,13 +26,17 @@
             </a-form-item>
             <a-form-item name="userName" label="领用人" :rules="[{ required: true, message: '请选择'}]">
                 <a-select v-model:value="formData.userName" placeholder="请选择">
-                    <a-select-option v-for="item in userList" :value="item.userName">{{ item.userName }}</a-select-option>
+                    <a-select-option v-for="item in userList" :value="item.userName">{{
+                        item.userName
+                        }}
+                    </a-select-option>
                 </a-select>
             </a-form-item>
             <a-form-item label="实验室">
-                <a-select v-model:value="formData.labName" placeholder="请选择">
-                    <a-select-option v-for="item in labList" :value="item">{{ item }}</a-select-option>
-                </a-select>
+                <a-input v-model:value="labName" :disabled="true"/>
+<!--                <a-select v-model:value="formData.labName" placeholder="请选择">-->
+<!--                    <a-select-option v-for="item in labList" :value="item">{{ item }}</a-select-option>-->
+<!--                </a-select>-->
             </a-form-item>
             <a-form-item name="itemStatus" label="状态" :rules="[{ required: true, message: '请选择'}]">
                 <a-radio-group v-model:value="formData.itemStatus">
@@ -43,6 +47,13 @@
         </a-form>
     </a-modal>
     <OperationBar :addShow="isAdmin" @add="addItem" @export="download" @search="searchItem"/>
+    <div style="display: flex;justify-content: space-between;padding: 0 10px">
+        <div style="cursor: pointer" @click="back">
+            <LeftOutlined style="padding:0 5px 15px 0;font-size: 15px;color:#707070"/>
+            <span style="color:#707070">返回</span>
+        </div>
+        <span style="color:#707070;font-weight: bold">{{ labName }}</span>
+    </div>
     <div class="loading" v-show="!isShow">
         <a-spin size="large"/>
     </div>
@@ -73,7 +84,10 @@
             </a-form-item>
             <a-form-item name="userName" label="领用人" :rules="[{ required: true, message: '请选择'}]">
                 <a-select v-model:value="formData.userName" placeholder="请选择">
-                    <a-select-option v-for="item in userList" :value="item.userName">{{ item.userName }}</a-select-option>
+                    <a-select-option v-for="item in userList" :value="item.userName">{{
+                        item.userName
+                        }}
+                    </a-select-option>
                 </a-select>
             </a-form-item>
             <a-form-item label="实验室">
@@ -109,6 +123,15 @@ import OperationBar from "@/components/OperationBar/OperationBar.vue";
 import Delete from "@/components/Delete/Delete.vue";
 import {message} from "ant-design-vue";
 import downloadExcel from "@/sdk/exportToExcel.js";
+import {useRoute, useRouter} from "vue-router";
+import {decryptByAES} from "@/sdk/utils.js";
+
+const route = useRoute()
+const router = useRouter()
+const labName = decryptByAES(route.query.id)
+const back = () => {
+    router.back()
+}
 
 const instance = getInstance()
 let user;
@@ -118,7 +141,9 @@ const formData = ref({});
 const isAdmin = ref(false);
 const isAddShow = ref(false);
 const addItem = async () => {
-    formData.value = {};
+    formData.value = {
+        labName: labName
+    };
     if (userList === undefined || labList === undefined) {
         const userRes = await instance.getAllUserList()
         const labRes = await instance.getAllLabList()
@@ -129,7 +154,7 @@ const addItem = async () => {
 };
 const searchItem = (searchInput) => {
     isShow.value = false;
-    instance.getItemList(searchInput).then(res => {
+    instance.getItemList(searchInput, labName).then(res => {
         dataSource.value = res.data.data;
         isShow.value = true;
     })
@@ -143,7 +168,7 @@ const onAddOk = () => {
             instance.addItem(formData.value).then(res => {
                 if (res.data.code === 1) {
                     message.info(res.data.data)
-                    instance.getItemList().then(res => {
+                    instance.getItemList(null, labName).then(res => {
                         dataSource.value = res.data.data;
                         isShow.value = true;
                     })
@@ -181,7 +206,7 @@ const onEditOk = () => {
             instance.editItem(formData.value).then(res => {
                 if (res.data.code === 1) {
                     message.info(res.data.data)
-                    instance.getItemList().then(res => {
+                    instance.getItemList(null, labName).then(res => {
                         dataSource.value = res.data.data;
                         isShow.value = true;
                     })
@@ -205,7 +230,7 @@ const deleteItem = (itemId) => {
     instance.deleteItemById(itemId).then(res => {
         if (res.data.code === 1) {
             message.info(res.data.data)
-            instance.getItemList().then(res => {
+            instance.getItemList(null, labName).then(res => {
                 dataSource.value = res.data.data;
                 isShow.value = true;
             })
@@ -217,7 +242,7 @@ onBeforeMount(() => {
         user = res.data.data;
         isAdmin.value = user.roleId;
     })
-    instance.getItemList().then(res => {
+    instance.getItemList(null, labName).then(res => {
         dataSource.value = res.data.data;
         isShow.value = true;
     })

@@ -98,7 +98,7 @@ public class LabController {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setCharacterEncoding("utf-8");
         try (OutputStream outputStream = response.getOutputStream()) {
-            EasyExcel.write(outputStream, Lab.class).sheet("labs").doWrite(labs); // 请替换为你自己的数据获取逻辑
+            EasyExcel.write(outputStream, Lab.class).sheet("labs").doWrite(labs);
             outputStream.flush();
         } catch (IOException e) {
             e.printStackTrace();

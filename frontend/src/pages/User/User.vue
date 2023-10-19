@@ -1,29 +1,29 @@
 <template>
-    <div class="loading" v-show="!isShow">
-        <a-spin size="large"/>
-    </div>
     <a-modal v-model:open="isAddShow" ok-text="确定" cancel-text="取消" @ok="onAddOk" @cancel="onAddCancel"
              title="添加">
-        <a-form :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
-            <a-form-item label="工资号">
+        <a-form ref="formRef" :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
+            <a-form-item name="userAccount" label="工资号" :rules="[{ required: true, message: '请输入工资号'}]">
                 <a-input v-model:value="formData.userAccount" placeholder="请输入工资号"/>
             </a-form-item>
-            <a-form-item label="姓名">
+            <a-form-item name="userName" label="姓名" :rules="[{ required: true, message: '请输入姓名'}]">
                 <a-input v-model:value="formData.userName" placeholder="请输入姓名"/>
             </a-form-item>
-            <a-form-item label="密码">
+            <a-form-item name="userPassword" label="密码" :rules="[{ required: true, message: '密码最低6位',min:6 }]">
                 <a-input v-model:value="formData.userPassword" placeHolder="请输入密码"/>
             </a-form-item>
         </a-form>
     </a-modal>
-    <OperationBar @add="addUser" @export="download" v-show="isShow"/>
+    <OperationBar :addShow="isAdmin" @add="addUser" @export="download" @search="searchUser"/>
+    <div class="loading" v-show="!isShow">
+        <a-spin size="large"/>
+    </div>
     <a-modal v-model:open="isEditShow" ok-text="确定" cancel-text="取消" @ok="onEditOk"
              @cancel="onEditCancel" title="编辑">
-        <a-form :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
-            <a-form-item label="工资号">
+        <a-form ref="formRef" :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
+            <a-form-item name="userAccount" label="工资号" :rules="[{ required: true, message: '请输入工资号'}]">
                 <a-input v-model:value="formData.userAccount" placeholder="请输入工资号"/>
             </a-form-item>
-            <a-form-item label="姓名">
+            <a-form-item name="userName" label="姓名" :rules="[{ required: true, message: '请输入姓名'}]">
                 <a-input v-model:value="formData.userName" placeholder="请输入姓名"/>
             </a-form-item>
             <a-form-item label="权限">
@@ -64,23 +64,39 @@ const addUser = () => {
     formData.value = {};
     isAddShow.value = true;
 };
-const onAddOk = () => {
+const searchUser = (searchInput) => {
     isShow.value = false;
-    instance.addUser(formData.value).then(res => {
-        if (res.data.code === 1) {
-            message.info(res.data.data)
-            instance.getUserList(input.value).then(res => {
-                dataSource.value = res.data.data;
-                isShow.value = true;
-            })
-        } else {
-            message.info(res.data.msg)
-            isShow.value = true;
-        }
+    instance.getUserList(searchInput).then(res => {
+        dataSource.value = res.data.data;
+        isShow.value = true;
     })
-    isAddShow.value = false;
+};
+const formRef = ref();
+const onAddOk = () => {
+    formRef.value
+        .validateFields()
+        .then(values => {
+            isShow.value = false;
+            instance.addUser(formData.value).then(res => {
+                if (res.data.code === 1) {
+                    message.info(res.data.data)
+                    instance.getUserList().then(res => {
+                        dataSource.value = res.data.data;
+                        isShow.value = true;
+                    })
+                } else {
+                    message.info(res.data.msg)
+                    isShow.value = true;
+                }
+            })
+            isAddShow.value = false;
+        }).catch(info => {
+            console.log('Validate Failed:', info);
+        }
+    )
 };
 const onAddCancel = () => {
+    formRef.value.resetFields();
     isAddShow.value = false;
 };
 const isEditShow = ref(false);
@@ -89,22 +105,30 @@ const onEdit = (data) => {
     isEditShow.value = true;
 };
 const onEditOk = () => {
-    isShow.value = false;
-    instance.editUser(formData.value).then(res => {
-        if (res.data.code === 1) {
-            message.info(res.data.data)
-            instance.getUserList(input.value).then(res => {
-                dataSource.value = res.data.data;
-                isShow.value = true;
+    formRef.value
+        .validateFields()
+        .then(values => {
+            isShow.value = false;
+            instance.editUser(formData.value).then(res => {
+                if (res.data.code === 1) {
+                    message.info(res.data.data)
+                    instance.getUserList().then(res => {
+                        dataSource.value = res.data.data;
+                        isShow.value = true;
+                    })
+                } else {
+                    message.info(res.data.msg)
+                    isShow.value = true;
+                }
             })
-        } else {
-            message.info(res.data.msg)
-            isShow.value = true;
+            isEditShow.value = false;
+        }).catch(info => {
+            console.log('Validate Failed:', info);
         }
-    })
-    isEditShow.value = false;
+    )
 };
 const onEditCancel = () => {
+    formRef.value.resetFields();
     isEditShow.value = false;
 };
 const deleteUser = (userId) => {
@@ -112,7 +136,7 @@ const deleteUser = (userId) => {
     instance.deleteUserById(userId).then(res => {
         if (res.data.code === 1) {
             message.info(res.data.data)
-            instance.getUserList(input.value).then(res => {
+            instance.getUserList().then(res => {
                 dataSource.value = res.data.data;
                 isShow.value = true;
             })
@@ -124,7 +148,7 @@ onBeforeMount(() => {
         user = res.data.data;
         isAdmin.value = user.roleId;
     })
-    instance.getUserList(input.value).then(res => {
+    instance.getUserList().then(res => {
         dataSource.value = res.data.data;
         isShow.value = true;
     })
@@ -132,7 +156,6 @@ onBeforeMount(() => {
 const download = () => {
     downloadExcel("/user",dataSource.value,"教师表.xlsx")
 }
-const input = ref('')
 const dataSource = ref();
 const isShow = ref(false);
 const columns = [

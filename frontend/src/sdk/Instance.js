@@ -52,12 +52,13 @@ class Instance {
     }
 
     //Item API
-    getItemList(input) {
+    getItemList(input,labName) {
         return $axios({
             url: '/item/page',
             method: 'get',
             params: {
-                input
+                input,
+                labName
             }
         })
     }

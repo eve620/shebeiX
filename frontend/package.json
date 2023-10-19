@@ -12,6 +12,7 @@
     "@ant-design/icons-vue": "^7.0.0",
     "ant-design-vue": "4.x",
     "axios": "^1.5.1",
+    "crypto-js": "^4.1.1",
     "vue": "^3.3.4",
     "vue-router": "^4.2.5"
   },

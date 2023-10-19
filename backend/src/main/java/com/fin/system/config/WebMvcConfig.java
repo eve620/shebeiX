@@ -41,24 +41,4 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
         //将上面的消息转换器对象追加到mvc框架的转换器集合中
         converters.add(0,messageConverter);
     }
-
-//    // Swagger配置
-//    @Bean
-//    public Docket createRestApi() {
-//        // 文档类型
-//        return new Docket(DocumentationType.SWAGGER_2)
-//                .apiInfo(apiInfo())
-//                .select()
-//                .apis(RequestHandlerSelectors.basePackage("com.fin.system.controller"))
-//                .paths(PathSelectors.any())
-//                .build();
-//    }
-//
-//    private ApiInfo apiInfo() {
-//        return new ApiInfoBuilder()
-//                .title("西电设备管理系统")
-//                .version("1.0")
-//                .description("西电设备管理系统接口文档")
-//                .build();
-//    }
 }

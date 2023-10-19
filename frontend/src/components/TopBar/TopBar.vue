@@ -5,7 +5,6 @@
             <a-input id=password v-model:value="passwordInput" placeHolder="新密码"/>
         </a-modal>
         <div class="top-bar-info">
-            <div @click="onChangeTheme">主题切换</div>
             <div @click="onChangePassword">修改密码</div>
             <div @click="logout">
                 <LogoutOutlined @click="logout"/>
@@ -23,10 +22,6 @@ import {ref} from "vue";
 import {message} from "ant-design-vue";
 
 const instance = getInstance()
-const emit = defineEmits(['changeTheme']);
-const onChangeTheme = () => {
-    emit('changeTheme')
-}
 const props = defineProps({
     userInfo: {
         type: Object,

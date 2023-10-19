@@ -1,12 +1,12 @@
 <template>
     <div class="operation-bar">
-        <a-input id="searchInput" v-model:value="searchInput" placeholder="请输入" style="width: 200px" allow-clear>
+        <a-input id="searchInput" @keyup.enter="onSearch" v-model:value="searchInput" placeholder="请输入" style="width: 200px" allow-clear>
             <template #prefix>
                 <SearchOutlined/>
             </template>
         </a-input>
         <div class="operation">
-            <a-button type="primary" @click="onAdd">添加</a-button>
+            <a-button type="primary" @click="onAdd" v-show="addShow">添加</a-button>
             <a-button class="export-excel" @click="onExport">导出Excel</a-button>
         </div>
     </div>
@@ -15,9 +15,13 @@
 <script setup>
 import {ref} from "vue";
 
-const emit = defineEmits(['add', 'export']);
+const emit = defineEmits(['add', 'export','search']);
+const props = defineProps(['addShow']);
 const searchInput = ref('');
 
+const onSearch = () => {
+    emit('search', searchInput.value);
+};
 const onAdd = () => {
     emit('add');
 };

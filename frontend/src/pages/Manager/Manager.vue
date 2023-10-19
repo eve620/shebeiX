@@ -1,29 +1,29 @@
 <template>
-    <div class="loading" v-show="!isShow">
-        <a-spin size="large"/>
-    </div>
     <a-modal v-model:open="isAddShow" ok-text="确定" cancel-text="取消" @ok="onAddOk" @cancel="onAddCancel"
              title="添加">
-        <a-form :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
-            <a-form-item label="账号">
+        <a-form ref="formRef" :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
+            <a-form-item name="userAccount" label="账号" :rules="[{ required: true, message: '请输入账号' }]">
                 <a-input v-model:value="formData.userAccount" placeholder="请输入账号"/>
             </a-form-item>
-            <a-form-item label="用户名">
+            <a-form-item name="userName" label="用户名" :rules="[{ required: true, message: '请输入用户名' }]">
                 <a-input v-model:value="formData.userName" placeholder="请输入用户名"/>
             </a-form-item>
-            <a-form-item label="密码">
+            <a-form-item name="userPassword" label="密码" :rules="[{ required: true, message: '密码最低6位',min:6 }]">
                 <a-input v-model:value="formData.userPassword" placeHolder="请输入密码"/>
             </a-form-item>
         </a-form>
     </a-modal>
-    <OperationBar @add="addManager" @export="download" v-show="isShow"/>
+    <OperationBar :addShow="isAdmin" @add="addManager" @export="download" @search="searchManager"/>
+    <div class="loading" v-show="!isShow">
+        <a-spin size="large"/>
+    </div>
     <a-modal v-model:open="isEditShow" ok-text="确定" cancel-text="取消" @ok="onEditOk"
              @cancel="onEditCancel" title="编辑">
-        <a-form :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
-            <a-form-item label="账号">
+        <a-form ref="formRef" :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
+            <a-form-item name="userAccount" label="账号" :rules="[{ required: true, message: '请输入账号' }]">
                 <a-input v-model:value="formData.userAccount" placeholder="请输入账号"/>
             </a-form-item>
-            <a-form-item label="用户名">
+            <a-form-item name="userName" label="用户名" :rules="[{ required: true, message: '请输入用户名' }]">
                 <a-input v-model:value="formData.userName" placeholder="请输入用户名"/>
             </a-form-item>
             <a-form-item label="权限">
@@ -64,48 +64,71 @@ const addManager = () => {
     formData.value = {};
     isAddShow.value = true;
 };
-const onAddOk = () => {
+const searchManager = (searchInput) => {
     isShow.value = false;
-    instance.addManager(formData.value).then(res => {
-        if (res.data.code === 1) {
-            message.info(res.data.data)
-            instance.getManagerList(input.value).then(res => {
-                dataSource.value = res.data.data;
-                isShow.value = true;
-            })
-        } else {
-            message.info(res.data.msg)
-            isShow.value = true;
-        }
+    instance.getManagerList(searchInput).then(res => {
+        dataSource.value = res.data.data;
+        isShow.value = true;
     })
-    isAddShow.value = false;
+};
+const formRef = ref();
+const onAddOk = () => {
+    formRef.value
+        .validateFields()
+        .then(values => {
+            isShow.value = false;
+            instance.addManager(formData.value).then(res => {
+                if (res.data.code === 1) {
+                    message.info(res.data.data)
+                    instance.getManagerList().then(res => {
+                        dataSource.value = res.data.data;
+                        isShow.value = true;
+                    })
+                } else {
+                    message.info(res.data.msg)
+                    isShow.value = true;
+                }
+            })
+            isAddShow.value = false;
+        }).catch(info => {
+            console.log('Validate Failed:', info);
+        }
+    )
 };
 const onAddCancel = () => {
+    formRef.value.resetFields();
     isAddShow.value = false;
 };
 const isEditShow = ref(false);
-const isRole = ref(false);
 const onEdit = (data) => {
     formData.value = JSON.parse(JSON.stringify(data));
     isEditShow.value = true;
 };
 const onEditOk = () => {
-    isShow.value=false;
-    instance.editUser(formData.value).then(res => {
-        if (res.data.code === 1) {
-            message.info(res.data.data)
-            instance.getManagerList(input.value).then(res => {
-                dataSource.value = res.data.data;
-                isShow.value = true;
+    formRef.value
+        .validateFields()
+        .then(values => {
+            isShow.value = false;
+            instance.editUser(formData.value).then(res => {
+                if (res.data.code === 1) {
+                    message.info(res.data.data)
+                    instance.getManagerList().then(res => {
+                        dataSource.value = res.data.data;
+                        isShow.value = true;
+                    })
+                } else {
+                    message.info(res.data.msg)
+                    isShow.value = true;
+                }
             })
-        } else {
-            message.info(res.data.msg)
-            isShow.value = true;
+            isEditShow.value = false;
+        }).catch(info => {
+            console.log('Validate Failed:', info);
         }
-    })
-    isEditShow.value = false;
+    )
 };
 const onEditCancel = () => {
+    formRef.value.resetFields();
     isEditShow.value = false;
 };
 
@@ -114,7 +137,7 @@ const deleteManager = (userId) => {
     instance.deleteUserById(userId).then(res => {
         if (res.data.code === 1) {
             message.info(res.data.data)
-            instance.getManagerList(input.value).then(res => {
+            instance.getManagerList().then(res => {
                 dataSource.value = res.data.data;
                 isShow.value = true;
             })
@@ -129,15 +152,14 @@ onBeforeMount(() => {
         user = res.data.data;
         isAdmin.value = user.roleId;
     })
-    instance.getManagerList(input.value).then(res => {
+    instance.getManagerList().then(res => {
         dataSource.value = res.data.data;
         isShow.value = true;
     })
 })
 const download = () => {
-    downloadExcel("/user",dataSource.value,"管理员表.xlsx")
+    downloadExcel("/user", dataSource.value, "管理员表.xlsx")
 }
-const input = ref('')
 const dataSource = ref();
 const isShow = ref(false);
 const columns = [
@@ -155,8 +177,8 @@ const columns = [
         title: '权限',
         dataIndex: 'roleId',
         width: '40%',
-        customRender(text){
-            return text.value===1?'管理员':'教师'
+        customRender(text) {
+            return text.value === 1 ? '管理员' : '教师'
         }
     },
     {

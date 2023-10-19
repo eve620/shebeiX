@@ -29,7 +29,7 @@ public class ItemController {
     private LabService labService;
 
     @GetMapping("/page")
-    public R<List<Item>> page(HttpServletRequest request, String input) {
+    public R<List<Item>> page(HttpServletRequest request, String input,String labName) {
         UserInfo user = (UserInfo) request.getSession().getAttribute("userInfo");
         String userName = user.userName;
         int roleId = user.roleId;
@@ -37,6 +37,7 @@ public class ItemController {
         LambdaQueryWrapper<Item> queryWrapper = new LambdaQueryWrapper();
         //添加过滤条件
         queryWrapper.like(StringUtils.isNotEmpty(input), Item::getItemName, input);
+        queryWrapper.like(StringUtils.isNotEmpty(labName), Item::getLabName, labName);
         //添加排序条件
         queryWrapper.orderByDesc(Item::getUpdateTime);
         if (roleId == 0) {
@@ -91,7 +92,7 @@ public class ItemController {
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setCharacterEncoding("utf-8");
         try (OutputStream outputStream = response.getOutputStream()) {
-            EasyExcel.write(outputStream, Item.class).sheet("items").doWrite(items); // 请替换为你自己的数据获取逻辑
+            EasyExcel.write(outputStream, Item.class).sheet("items").doWrite(items);
             outputStream.flush();
         } catch (IOException e) {
             e.printStackTrace();
