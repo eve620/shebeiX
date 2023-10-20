@@ -11,29 +11,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupp
 import java.util.List;
 
 @Configuration
-//@EnableSwagger2
-//@EnableKnife4j
 public class WebMvcConfig extends WebMvcConfigurationSupport {
-    /**
-     * 静态资源映射
-     * @param registry
-     */
-    @Override
-    protected void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Swwagger 对应的静态资源（自动生成的）
-        registry.addResourceHandler("doc.html").addResourceLocations("classpath:/META-INF/resources/");
-        registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
-        registry.addResourceHandler("/backend/**").addResourceLocations("classpath:/backend/");
-        registry.addResourceHandler("/manage/**").addResourceLocations("classpath:/manage/");
-        registry.addResourceHandler("/styles/**").addResourceLocations("classpath:/styles/");
-    }
     /**
      * 扩展mvc框架的消息转换器
      * @param converters
      */
     @Override
     protected void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
-//        log.info("扩展消息转换器...");
         //创建消息转换器对象
         MappingJackson2HttpMessageConverter messageConverter = new MappingJackson2HttpMessageConverter();
         //设置对象转换器，底层使用Jackson将Java对象转为json
