@@ -42,14 +42,15 @@
       </a-form-item>
     </a-form>
   </a-modal>
-  <div style="display: flex;justify-content: space-between;padding: 0 10px">
-    <div style="cursor: pointer" @click="()=>{router.push('/home/item')}">
+  <OperationBar :addShow="isAdmin" @add="addItem" @export="download" @search="searchItem"/>
+  <div v-show="useRoute().path.startsWith('/home/check')"
+       style="display: flex;justify-content: space-between;padding: 0 10px">
+    <div style="cursor: pointer" @click="()=>{router.push('/home/check')}">
       <LeftOutlined style="padding:0 5px 15px 0;font-size: 15px;color:#707070"/>
       <span style="color:#707070">返回</span>
     </div>
     <span style="color:#707070;font-weight: bold">{{ yearId + "年审查" }}</span>
   </div>
-  <OperationBar :addShow="isAdmin" @add="addItem" @export="download" @search="searchItem"/>
   <div class="loading" v-show="!isShow">
     <a-spin size="large"/>
   </div>
@@ -96,25 +97,8 @@
       </a-form-item>
     </a-form>
   </a-modal>
-  <a-select
-      v-model:value="itemSelected"
-      mode="multiple"
-      style="width: 30%"
-      placeholder="Please select"
-      :options="arr"
-      @change="handleChange"
-  ></a-select>
-  <a-select
-      v-model:value="userSelected"
-      mode="multiple"
-      style="width: 30%"
-      placeholder="Please select"
-      :options="userArr"
-      @change="handleChange"
-  ></a-select>
   <a-table :columns="columns"
            :data-source="dataSource"
-           :on-change="handleTableChange"
            v-show="isShow"
            row-key="itemId"
            bordered>
@@ -127,54 +111,42 @@
   </a-table>
 </template>
 <script setup>
-import {computed, onBeforeMount, ref} from 'vue';
+import {onBeforeMount, ref} from 'vue';
 import getInstance from "@/sdk/Instance.js";
 import OperationBar from "@/components/OperationBar/OperationBar.vue";
 import Delete from "@/components/Delete/Delete.vue";
 import {message} from "ant-design-vue";
 import downloadExcel from "@/sdk/exportToExcel.js";
 import router from "@/router.js";
-import {useRoute} from "vue-router";
+import {useRoute, useRouter} from "vue-router";
 
 const instance = getInstance()
 let user;
-const userList = ref([]);
-const labList = ref([]);
+let userList;
+let labList;
 const formData = ref({});
 const isAdmin = ref(false);
 const isAddShow = ref(false);
 const route = useRoute()
 const yearId = route.query.id
-const handleChange = (value) => {
-  console.log(`selected ${value}`)
-}
-const itemSelected = ref([])
-const userSelected = ref([])
-const handleTableChange = (pagination, filters, sorter) => {
-  const filterData = dataSourceTemplate.filter(item => {
-    if (filters.itemName) {
-      return filters.itemName.some(keyword => item.itemName.includes(keyword));
-    }
-    return true
-  });
-  dataSource.value = filterData
-}
 const addItem = async () => {
   formData.value = {};
+  if (userList === undefined || labList === undefined) {
+    const userRes = await instance.getAllUserList()
+    const labRes = await instance.getAllLabList()
+    userList = userRes.data.data;
+    labList = labRes.data.data;
+  }
   isAddShow.value = true;
 };
 const searchItem = (searchInput) => {
   isShow.value = false;
   instance.getItemList(searchInput).then(res => {
-    dataSourceTemplate = res.data.data;
     dataSource.value = res.data.data;
     isShow.value = true;
   })
 };
 const formRef = ref();
-let dataSourceTemplate
-const dataSource = ref([]);
-const isShow = ref(false);
 const onAddOk = () => {
   formRef.value
       .validateFields()
@@ -184,7 +156,6 @@ const onAddOk = () => {
           if (res.data.code === 1) {
             message.info(res.data.data)
             instance.getItemList().then(res => {
-              dataSourceTemplate = res.data.data;
               dataSource.value = res.data.data;
               isShow.value = true;
             })
@@ -209,8 +180,8 @@ const onEdit = async (data) => {
   if (userList === undefined || labList === undefined) {
     const userRes = await instance.getAllUserList()
     const labRes = await instance.getAllLabList()
-    userList.value = userRes.data.data;
-    labList.value = labRes.data.data;
+    userList = userRes.data.data;
+    labList = labRes.data.data;
   }
   isEditShow.value = true;
 };
@@ -223,7 +194,6 @@ const onEditOk = () => {
           if (res.data.code === 1) {
             message.info(res.data.data)
             instance.getItemList().then(res => {
-              dataSourceTemplate = res.data.data;
               dataSource.value = res.data.data;
               isShow.value = true;
             })
@@ -248,7 +218,6 @@ const deleteItem = (itemId) => {
     if (res.data.code === 1) {
       message.info(res.data.data)
       instance.getItemList().then(res => {
-        dataSourceTemplate = res.data.data;
         dataSource.value = res.data.data;
         isShow.value = true;
       })
@@ -262,40 +231,17 @@ onBeforeMount(() => {
       isAdmin.value = user.roleId;
     }
   })
-  instance.getAllUserList().then(res => {
-    if (res.data.code === 1) {
-      userList.value = res.data.data
-    }
-  })
-  instance.getAllLabList().then(res => {
-    if (res.data.code === 1) {
-      labList.value = res.data.data
-    }
-  })
-  instance.getItemList().then(res => {
-    dataSourceTemplate = res.data.data;
-    dataSource.value = res.data.data;
-    isShow.value = true;
-  })
+  // instance.getItemList().then(res => {
+  //   dataSource.value = res.data.data;
+  //   isShow.value = true;
+  // })
+  isShow.value = true;
 })
 const download = () => {
   downloadExcel("/item", dataSource.value, "资产表.xlsx")
 }
-const set = computed(() => {
-  return new Set(dataSource.value.map(item => (item.itemName)))
-})
-const arr = computed(() => {
-  let array = []
-  set.value.forEach((item) => {
-    array.push({
-      value: item,
-    })
-  })
-  return array
-})
-const userArr = computed(() => {
-  return userList.value.map((item) => ({value: item.userName}))
-})
+const dataSource = ref();
+const isShow = ref(false);
 const columns = [
   {
     title: '类型',
@@ -311,8 +257,7 @@ const columns = [
     title: '名称',
     dataIndex: 'itemName',
     width: '15%',
-  },
-  {
+  }, {
     title: '型号',
     dataIndex: 'itemModel',
     width: '15%',

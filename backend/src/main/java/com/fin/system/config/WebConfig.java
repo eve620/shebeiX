@@ -3,17 +3,27 @@ package com.fin.system.config;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
-@SuppressWarnings("SpringJavaAutowiredFieldsWarningInspection")
 public class WebConfig implements WebMvcConfigurer {
+//    @Override
+//    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+//        // 解决静态资源无法访问的问题
+//        registry.addResourceHandler("/**").addResourceLocations("classpath:/static/");
+//        registry.addResourceHandler("doc.html").addResourceLocations("classpath:/META-INF/resources/");
+//        registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
+//    }
+
     @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")  // 拦截所有的请求
-                .allowedOrigins("*")  // 可跨域的域名，可以为 *
-                .allowCredentials(true)
-                .allowedMethods("*")   // 允许跨域的方法，可以单独配置
-                .allowedHeaders("*");  // 允许跨域的请求头，可以单独配置
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/")
+                .setViewName("forward:/index.html");
+        registry.addViewController("/login")
+                .setViewName("forward:/index.html");
+        registry.addViewController("/home/**")
+                .setViewName("forward:/index.html");
     }
 }
