@@ -42,17 +42,6 @@
       </a-form-item>
     </a-form>
   </a-modal>
-  <div style="display: flex;justify-content: space-between;padding: 0 10px">
-    <div style="cursor: pointer" @click="()=>{router.push('/home/item')}">
-      <LeftOutlined style="padding:0 5px 15px 0;font-size: 15px;color:#707070"/>
-      <span style="color:#707070">返回</span>
-    </div>
-    <span style="color:#707070;font-weight: bold">{{ yearId + "年审查" }}</span>
-  </div>
-  <OperationBar :addShow="isAdmin" @add="addItem" @export="download" @search="searchItem"/>
-  <div class="loading" v-show="!isShow">
-    <a-spin size="large"/>
-  </div>
   <a-modal v-model:open="isEditShow" ok-text="确定" cancel-text="取消" @ok="onEditOk"
            @cancel="onEditCancel" title="编辑">
     <a-form ref="formRef" :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
@@ -96,6 +85,17 @@
       </a-form-item>
     </a-form>
   </a-modal>
+  <div style="display: flex;justify-content: space-between;padding: 0 10px">
+    <div style="cursor: pointer" @click="()=>{router.push('/home/item')}">
+      <LeftOutlined style="padding:0 5px 15px 0;font-size: 15px;color:#707070"/>
+      <span style="color:#707070">返回</span>
+    </div>
+    <span style="color:#707070;font-weight: bold">{{ yearId + "年审查" }}</span>
+  </div>
+  <OperationBar :addShow="isAdmin" @add="addItem" @export="download" @search="searchItem"/>
+  <div class="loading" v-show="!isShow">
+    <a-spin size="large"/>
+  </div>
   <a-select
       v-model:value="itemSelected"
       mode="multiple"
