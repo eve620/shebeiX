@@ -1,70 +1,58 @@
 <template>
-  <div v-if="currentYear">
-    <a-modal v-model:open="isAddShow" ok-text="确定" cancel-text="取消" @ok="onAddOk" @cancel="onAddCancel"
-             title="添加">
-      <a-form ref="formRef" :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
-        <a-form-item name="labName" label="地点" :rules="[{ required: true, message: '请输入地点' }]">
-          <a-input v-model:value="formData.labName" placeholder="请输入地点"/>
-        </a-form-item>
-        <a-form-item name="userName" label="管理人" :rules="[{ required: true, message: '请选择管理人' }]">
-          <a-select v-model:value="formData.userName" placeholder="请选择">
-            <a-select-option v-for="item in userList" :value="item.userName"
-                             @click="setAccount(item.userAccount)">{{ item.userName }}
-            </a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="工资号">
-          <a-input v-model:value="formData.userAccount" :disabled="true"/>
-        </a-form-item>
-      </a-form>
-    </a-modal>
-    <a-modal v-model:open="isEditShow" ok-text="确定" cancel-text="取消" @ok="onEditOk"
-             @cancel="onEditCancel" title="编辑">
-      <a-form ref="formRef" :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
-        <a-form-item label="地点">
-          <a-input v-model:value="formData.labName" :disabled="true"/>
-        </a-form-item>
-        <a-form-item label="管理人">
-          <a-select v-model:value="formData.userName" placeholder="请选择">
-            <a-select-option v-for="item in userList" :value="item.userName"
-                             @click="setAccount(item.userAccount)">{{ item.userName }}
-            </a-select-option>
-          </a-select>
-        </a-form-item>
-        <a-form-item label="工资号">
-          <a-input v-model:value="formData.userAccount" :disabled="true"/>
-        </a-form-item>
-      </a-form>
-    </a-modal>
-    <div style="display: flex;justify-content: space-between;padding: 0 10px">
-      <div style="cursor: pointer" @click="()=>{router.push('/home/lab')}">
-        <LeftOutlined style="padding:0 5px 15px 0;font-size: 15px;color:#707070"/>
-        <span style="color:#707070">返回</span>
-      </div>
-      <span style="color:#707070;font-weight: bold">{{ currentYear + "年审查" }}</span>
-    </div>
-    <OperationBar :item-list="arr" :user-list="userArr" :addShow="isAdmin" @add="addLab" @export="download"
-                  @handleSearch="handleSearch"/>
-    <div class="loading" v-show="!isShow">
-      <a-spin size="large"/>
-    </div>
-    <a-table :columns="columns"
-             :data-source="dataSource"
-             v-show="isShow"
-             row-key="itemId"
-             bordered>
-      <template v-slot:bodyCell="{ column,record }">
+  <a-modal v-model:open="isAddShow" ok-text="确定" cancel-text="取消" @ok="onAddOk" @cancel="onAddCancel"
+           title="添加">
+    <a-form ref="formRef" :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
+      <a-form-item name="labName" label="地点" :rules="[{ required: true, message: '请输入地点' }]">
+        <a-input v-model:value="formData.labName" placeholder="请输入地点"/>
+      </a-form-item>
+      <a-form-item name="userName" label="管理人" :rules="[{ required: true, message: '请选择管理人' }]">
+        <a-select v-model:value="formData.userName" placeholder="请选择">
+          <a-select-option v-for="item in userList" :value="item.userName"
+                           @click="setAccount(item.userAccount)">{{ item.userName }}
+          </a-select-option>
+        </a-select>
+      </a-form-item>
+      <a-form-item label="工资号">
+        <a-input v-model:value="formData.userAccount" :disabled="true"/>
+      </a-form-item>
+    </a-form>
+  </a-modal>
+  <a-modal v-model:open="isEditShow" ok-text="确定" cancel-text="取消" @ok="onEditOk"
+           @cancel="onEditCancel" title="编辑">
+    <a-form ref="formRef" :model="formData" :labelCol="{ span: 6 }" :wrapperCol="{ span: 14 }">
+      <a-form-item label="地点">
+        <a-input v-model:value="formData.labName" :disabled="true"/>
+      </a-form-item>
+      <a-form-item label="管理人">
+        <a-select v-model:value="formData.userName" placeholder="请选择">
+          <a-select-option v-for="item in userList" :value="item.userName"
+                           @click="setAccount(item.userAccount)">{{ item.userName }}
+          </a-select-option>
+        </a-select>
+      </a-form-item>
+      <a-form-item label="工资号">
+        <a-input v-model:value="formData.userAccount" :disabled="true"/>
+      </a-form-item>
+    </a-form>
+  </a-modal>
+  <OperationBar :item-list="arr" :user-list="userArr" :addShow="isAdmin" @add="addLab" @export="download"
+                @handleSearch="handleSearch"/>
+  <div class="loading" v-show="!isShow">
+    <a-spin size="large"/>
+  </div>
+  <a-table :columns="columns"
+           :data-source="dataSource"
+           v-show="isShow"
+           row-key="itemId"
+           bordered>
+    <template v-slot:bodyCell="{ column,record }">
             <span v-if="column.dataIndex==='operation'">
                   <a @click="onEdit(record)">编辑</a>
                   <a class="check-button" @click="checkDetail(record.labName)">查看</a>
                   <Delete @delete="deleteLab" :tagetId="record.labId" v-show="isAdmin"/>
             </span>
-      </template>
-    </a-table>
-  </div>
-  <div v-else>
-    <NavList/>
-  </div>
+    </template>
+  </a-table>
 </template>
 <script setup>
 import {computed, onBeforeMount, ref} from 'vue';
@@ -100,7 +88,8 @@ const addLab = async () => {
 };
 //查看实验室详情
 const checkDetail = (labName) => {
-  router.push({name: 'labDetail', query: {year: currentYear.value, id: encryptByAES(labName)}})
+  // router.push({name: 'labDetail', query: {year: currentYear.value, id: encryptByAES(labName)}})
+  router.push({name: 'labDetail', query: {id: encryptByAES(labName)}})
 }
 const formRef = ref();
 const onAddOk = () => {

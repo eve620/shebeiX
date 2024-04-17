@@ -1,7 +1,12 @@
 <template>
   <div>
+    <div style="cursor: pointer" @click="()=>{router.push('/home/lab')}">
+      <LeftOutlined style="padding:0 5px 15px 0;font-size: 15px;color:#707070;margin-left: 10px"/>
+      <span style="color:#707070">返回</span>
+    </div>
     <div class="list-content">
-      <div class="list-button" @click="()=>{router.push('/home/lab?year=2024')}">
+      <div class="list-button"
+           @click="()=>{router.push({name: 'labDetail', query: {year:2024,id: encryptByAES(labName)}})}">
         <span>2024年盘查</span>
       </div>
     </div>
@@ -12,11 +17,12 @@
 import router from "@/router.js";
 import {onBeforeMount, ref} from "vue";
 import getInstance from "@/sdk/Instance.js";
+import {encryptByAES} from "@/sdk/utils.js";
 
 let user;
 const isAdmin = ref(false);
 const instance = getInstance()
-
+const props = defineProps(['labName']);
 onBeforeMount(() => {
   instance.whoami().then(res => {
     if (res.data.code === 1) {
