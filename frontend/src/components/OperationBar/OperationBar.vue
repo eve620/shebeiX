@@ -1,11 +1,33 @@
 <template>
   <div class="operation-bar">
-    <a-input id="searchInput" @keyup.enter="onSearch" v-model:value="searchInput" placeholder="请输入"
-             style="width: 200px" allow-clear>
-      <template #prefix>
-        <SearchOutlined/>
-      </template>
-    </a-input>
+    <div style="flex: 1">
+      <div style="display: inline-block;width: 50%;padding-right: 10px">
+        <a-select
+            v-model:value="itemSelected"
+            mode="multiple"
+            style="min-width: 80%"
+            placeholder="请输入名称"
+            :options="itemList"
+            @change="handleChange"
+        ></a-select>
+      </div>
+      <div style="display: inline-block;width: 50%;padding-right: 10px">
+        <a-select
+            v-model:value="userSelected"
+            mode="multiple"
+            style="min-width: 80%"
+            placeholder="请输入姓名"
+            :options="userList"
+            @change="handleChange"
+        ></a-select>
+      </div>
+    </div>
+    <!--    <a-input id="searchInput" @keyup.enter="onSearch" v-model:value="searchInput" placeholder="请输入"-->
+    <!--             style="width: 200px" allow-clear>-->
+    <!--      <template #prefix>-->
+    <!--        <SearchOutlined/>-->
+    <!--      </template>-->
+    <!--    </a-input>-->
     <div class="operation">
       <a-button type="primary" @click="onAdd" v-show="addShow">添加</a-button>
       <a-button class="import-excel" v-show="addShow && useRoute().path.startsWith('/home/item')">导入Excel
@@ -20,8 +42,13 @@ import {ref} from "vue";
 import {useRoute} from "vue-router";
 
 const emit = defineEmits(['add', 'export', 'search']);
-const props = defineProps(['addShow']);
+const props = defineProps(['addShow', 'itemList', 'userList']);
 const searchInput = ref('');
+const itemSelected = ref([])
+const userSelected = ref([])
+const handleChange = (value) => {
+  console.log(`selected ${value}`)
+}
 
 const onSearch = () => {
   emit('search', searchInput.value);

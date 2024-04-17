@@ -93,26 +93,11 @@
       </div>
       <span style="color:#707070;font-weight: bold">{{ currentYear + "年审查" }}</span>
     </div>
-    <OperationBar :addShow="isAdmin" @add="addItem" @export="download" @search="searchItem"/>
+    <OperationBar :addShow="isAdmin" :itemList="arr" :userList="userArr" @add="addItem" @export="download"
+                  @search="searchItem"/>
     <div class="loading" v-show="!isShow">
       <a-spin size="large"/>
     </div>
-    <a-select
-        v-model:value="itemSelected"
-        mode="multiple"
-        style="width: 30%"
-        placeholder="Please select"
-        :options="arr"
-        @change="handleChange"
-    ></a-select>
-    <a-select
-        v-model:value="userSelected"
-        mode="multiple"
-        style="width: 30%"
-        placeholder="Please select"
-        :options="userArr"
-        @change="handleChange"
-    ></a-select>
     <a-table :columns="columns"
              :data-source="dataSource"
              :on-change="handleTableChange"
@@ -171,11 +156,14 @@ const addItem = async () => {
 };
 const searchItem = (searchInput) => {
   isShow.value = false;
-  instance.getItemList(searchInput).then(res => {
-    dataSourceTemplate = res.data.data;
-    dataSource.value = res.data.data;
-    isShow.value = true;
-  })
+  dataSource.value = dataSourceTemplate.filter((item) => item.itemName.indexOf(searchInput) >= 0)
+  // instance.getItemList(searchInput).then(res => {
+  //   dataSourceTemplate = res.data.data;
+  //   dataSource.value = res.data.data;
+  //   isShow.value = true;
+  // })
+
+  isShow.value = true;
 };
 const formRef = ref();
 let dataSourceTemplate
