@@ -94,13 +94,12 @@
       <span style="color:#707070;font-weight: bold">{{ currentYear + "年审查" }}</span>
     </div>
     <OperationBar :addShow="isAdmin" :itemList="arr" :userList="userArr" @add="addItem" @export="download"
-                  @search="searchItem"/>
+                  @handleSearch="handleSearch"/>
     <div class="loading" v-show="!isShow">
       <a-spin size="large"/>
     </div>
     <a-table :columns="columns"
              :data-source="dataSource"
-             :on-change="handleTableChange"
              v-show="isShow"
              row-key="itemId"
              bordered>
@@ -136,37 +135,12 @@ const isAdmin = ref(false);
 const isAddShow = ref(false);
 const route = useRoute()
 const currentYear = computed(() => route.query.year)
-const handleChange = (value) => {
-  console.log(`selected ${value}`)
-}
-const itemSelected = ref([])
-const userSelected = ref([])
-const handleTableChange = (pagination, filters, sorter) => {
-  const filterData = dataSourceTemplate.filter(item => {
-    if (filters.itemName) {
-      return filters.itemName.some(keyword => item.itemName.includes(keyword));
-    }
-    return true
-  });
-  dataSource.value = filterData
-}
 const addItem = async () => {
   formData.value = {};
   isAddShow.value = true;
 };
-const searchItem = (searchInput) => {
-  isShow.value = false;
-  dataSource.value = dataSourceTemplate.filter((item) => item.itemName.indexOf(searchInput) >= 0)
-  // instance.getItemList(searchInput).then(res => {
-  //   dataSourceTemplate = res.data.data;
-  //   dataSource.value = res.data.data;
-  //   isShow.value = true;
-  // })
-
-  isShow.value = true;
-};
 const formRef = ref();
-let dataSourceTemplate
+const dataSourceTemplate = ref([])
 const dataSource = ref([]);
 const isShow = ref(false);
 const onAddOk = () => {
@@ -178,7 +152,7 @@ const onAddOk = () => {
           if (res.data.code === 1) {
             message.info(res.data.data)
             instance.getItemList().then(res => {
-              dataSourceTemplate = res.data.data;
+              dataSourceTemplate.value = res.data.data;
               dataSource.value = res.data.data;
               isShow.value = true;
             })
@@ -217,7 +191,7 @@ const onEditOk = () => {
           if (res.data.code === 1) {
             message.info(res.data.data)
             instance.getItemList().then(res => {
-              dataSourceTemplate = res.data.data;
+              dataSourceTemplate.value = res.data.data;
               dataSource.value = res.data.data;
               isShow.value = true;
             })
@@ -242,7 +216,7 @@ const deleteItem = (itemId) => {
     if (res.data.code === 1) {
       message.info(res.data.data)
       instance.getItemList().then(res => {
-        dataSourceTemplate = res.data.data;
+        dataSourceTemplate.value = res.data.data;
         dataSource.value = res.data.data;
         isShow.value = true;
       })
@@ -267,7 +241,7 @@ onBeforeMount(() => {
     }
   })
   instance.getItemList().then(res => {
-    dataSourceTemplate = res.data.data;
+    dataSourceTemplate.value = res.data.data;
     dataSource.value = res.data.data;
     isShow.value = true;
   })
@@ -276,7 +250,7 @@ const download = () => {
   downloadExcel("/item", dataSource.value, "资产表.xlsx")
 }
 const set = computed(() => {
-  return new Set(dataSource.value.map(item => (item.itemName)))
+  return new Set(dataSourceTemplate.value.map(item => (item.itemName)))
 })
 const arr = computed(() => {
   let array = []
@@ -287,9 +261,29 @@ const arr = computed(() => {
   })
   return array
 })
-const userArr = computed(() => {
-  return userList.value.map((item) => ({value: item.userName}))
+const userSet = computed(() => {
+  return new Set(dataSourceTemplate.value.map(item => (item.userName)))
 })
+const userArr = computed(() => {
+  let array = []
+  userSet.value.forEach((item) => {
+    array.push({
+      value: item,
+    })
+  })
+  return array
+})
+const handleSearch = (searchParams) => {
+  isShow.value = false;
+  dataSource.value = dataSourceTemplate.value.filter((item) => {
+    const itemSelected = searchParams.itemSelected;
+    const userSelected = searchParams.userSelected;
+    const itemMatch = itemSelected.length === 0 || itemSelected.some(keyword => item.itemName.includes(keyword));
+    const userMatch = userSelected.length === 0 || userSelected.some(keyword => item.userName.includes(keyword));
+    return itemMatch && userMatch;
+  });
+  isShow.value = true;
+};
 const columns = [
   {
     title: '类型',

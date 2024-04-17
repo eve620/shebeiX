@@ -43,7 +43,8 @@
       </div>
       <span style="color:#707070;font-weight: bold">{{ currentYear + "年审查" }}</span>
     </div>
-    <OperationBar :addShow="isAdmin" @add="addLab" @export="download" @search="searchLab"/>
+    <OperationBar :item-list="arr" :user-list="userArr" :addShow="isAdmin" @add="addLab" @export="download"
+                  @handleSearch="handleSearch"/>
     <div class="loading" v-show="!isShow">
       <a-spin size="large"/>
     </div>
@@ -97,14 +98,6 @@ const addLab = async () => {
   }
   isAddShow.value = true;
 };
-//根据输入栏输入查询
-const searchLab = (searchInput) => {
-  isShow.value = false;
-  instance.getLabList(searchInput).then(res => {
-    dataSource.value = res.data.data;
-    isShow.value = true;
-  })
-};
 //查看实验室详情
 const checkDetail = (labName) => {
   router.push({name: 'labDetail', query: {year: currentYear.value, id: encryptByAES(labName)}})
@@ -119,6 +112,7 @@ const onAddOk = () => {
           if (res.data.code === 1) {
             message.info(res.data.data)
             instance.getLabList().then(res => {
+              dataSourceTemplate.value = res.data.data
               dataSource.value = res.data.data;
               isShow.value = true;
             })
@@ -155,6 +149,7 @@ const onEditOk = () => {
           if (res.data.code === 1) {
             message.info(res.data.data)
             instance.getLabList().then(res => {
+              dataSourceTemplate.value = res.data.data
               dataSource.value = res.data.data;
               isShow.value = true;
             })
@@ -179,6 +174,7 @@ const deleteLab = (labId) => {
     if (res.data.code === 1) {
       message.info(res.data.data)
       instance.getLabList().then(res => {
+        dataSourceTemplate.value = res.data.data
         dataSource.value = res.data.data;
         isShow.value = true;
       })
@@ -193,6 +189,7 @@ onBeforeMount(() => {
     }
   })
   instance.getLabList().then(res => {
+    dataSourceTemplate.value = res.data.data
     dataSource.value = res.data.data;
     isShow.value = true;
   })
@@ -201,7 +198,43 @@ const download = () => {
   downloadExcel("/lab", dataSource.value, "实验室表.xlsx")
 }
 const dataSource = ref();
+const dataSourceTemplate = ref([])
 const isShow = ref(false);
+const set = computed(() => {
+  return new Set(dataSourceTemplate.value.map(item => (item.labName)))
+})
+const arr = computed(() => {
+  let array = []
+  set.value.forEach((item) => {
+    array.push({
+      value: item,
+    })
+  })
+  return array
+})
+const userSet = computed(() => {
+  return new Set(dataSourceTemplate.value.map(item => (item.userName)))
+})
+const userArr = computed(() => {
+  let array = []
+  userSet.value.forEach((item) => {
+    array.push({
+      value: item,
+    })
+  })
+  return array
+})
+const handleSearch = (searchParams) => {
+  isShow.value = false;
+  dataSource.value = dataSourceTemplate.value.filter((item) => {
+    const itemSelected = searchParams.itemSelected;
+    const userSelected = searchParams.userSelected;
+    const itemMatch = itemSelected.length === 0 || itemSelected.some(keyword => item.labName.includes(keyword));
+    const userMatch = userSelected.length === 0 || userSelected.some(keyword => item.userName.includes(keyword));
+    return itemMatch && userMatch;
+  });
+  isShow.value = true;
+};
 const columns = [
   {
     title: '实验室名称',
