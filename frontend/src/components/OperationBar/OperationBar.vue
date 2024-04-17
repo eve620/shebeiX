@@ -24,8 +24,10 @@
     </div>
     <div class="operation">
       <a-button type="primary" @click="onAdd" v-show="addShow">添加</a-button>
-      <a-button class="import-excel" v-show="addShow && useRoute().path.startsWith('/home/item')">导入Excel
+      <a-button class="import-excel" @click="openFileInput"
+                v-show="addShow && useRoute().path.startsWith('/home/item')">导入Excel
       </a-button>
+      <input type="file" ref="fileInputRef" style="display: none" @change="handleFileChange">
       <a-button class="export-excel" @click="onExport">导出Excel</a-button>
     </div>
   </div>
@@ -34,12 +36,33 @@
 <script setup>
 import {ref} from "vue";
 import {useRoute} from "vue-router";
+import {message} from "ant-design-vue";
 
 const emit = defineEmits(['add', 'export', 'handleSearch']);
 const props = defineProps(['addShow', 'itemList', 'userList']);
 const searchInput = ref('');
 const itemSelected = ref([])
 const userSelected = ref([])
+const uploadedFile = ref(null);
+const fileInputRef = ref(null);
+
+const openFileInput = () => {
+  fileInputRef.value.click();
+};
+
+const handleFileChange = (event) => {
+  const file = event.target.files[0];
+  const allowedTypes = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']; // 允许的 MIME 类型
+  console.log(file)
+  // 检查文件类型是否允许上传
+  if (file && allowedTypes.includes(file.type)) {
+    uploadedFile.value = file;
+    message.success('Excel文件上传成功')
+  } else {
+    message.error('请上传 Excel 文件');
+    event.target.value = null;
+  }
+};
 const onSearch = () => {
   emit('handleSearch', {itemSelected: itemSelected.value, userSelected: userSelected.value});
 };
