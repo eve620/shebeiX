@@ -5,7 +5,7 @@
         <h1>:( 出错啦</h1>
         <h2>404 Not Found : 页面不存在</h2>
         <h3>
-            <router-link to="/login">点击返回登陆界面</router-link>
+            <router-link to="/home">点击返回</router-link>
         </h3>
     </div>
 </template>

@@ -21,11 +21,6 @@ const router = createRouter({
                 {
                     path: '/home/item',
                     name: 'item',
-                    component: () => import('@/pages/Item/NavList.vue'),
-                },
-                {
-                    path: '/home/item/year',
-                    name: 'itemyear',
                     component: () => import('@/pages/Item/Item.vue'),
                 },
                 {
@@ -49,6 +44,12 @@ const router = createRouter({
                     component: () => import('@/pages/Manager/Manager.vue'),
                 },
             ]
+        },
+        {
+            path: '/error',
+            name: 'error',
+            meta: {status: 404},
+            component: () => import('@/pages/404.vue'),
         },
         {
             path: '/:pathMatch(.*)*',

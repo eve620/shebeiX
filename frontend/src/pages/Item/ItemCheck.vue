@@ -7,7 +7,7 @@
       <a-button type="primary" @click="onChangeAddCheck">添加</a-button>
     </div>
     <div class="list-content">
-      <div class="list-button" @click="()=>{router.push('/home/item/year?id=2024')}">
+      <div class="list-button" @click="()=>{router.push('/home/item?year=2024')}">
         <span>2024年盘查</span>
       </div>
     </div>
