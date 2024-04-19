@@ -27,7 +27,19 @@ class Instance {
             data
         })
     }
+    importExcel(file) {
+        const formData = new FormData();
+        formData.append('file', file);
 
+        return $axios({
+            url: "item/upload",
+            method: 'post',
+            data: formData,
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+    }
     //Auth API
     whoami() {
         return $axios({
@@ -53,7 +65,7 @@ class Instance {
     }
 
     //Item API
-    getItemList(input,labName) {
+    getItemList(input, labName) {
         return $axios({
             url: '/item/page',
             method: 'get',

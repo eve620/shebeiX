@@ -37,6 +37,7 @@
 import {ref} from "vue";
 import {useRoute} from "vue-router";
 import {message} from "ant-design-vue";
+import getInstance from "@/sdk/Instance.js";
 
 const emit = defineEmits(['add', 'export', 'handleSearch']);
 const props = defineProps(['addShow', 'itemList', 'userList']);
@@ -45,6 +46,8 @@ const itemSelected = ref([])
 const userSelected = ref([])
 const uploadedFile = ref(null);
 const fileInputRef = ref(null);
+const instance = getInstance()
+
 
 const openFileInput = () => {
   fileInputRef.value.click();
@@ -53,10 +56,10 @@ const openFileInput = () => {
 const handleFileChange = (event) => {
   const file = event.target.files[0];
   const allowedTypes = ['application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']; // 允许的 MIME 类型
-  console.log(file)
   // 检查文件类型是否允许上传
   if (file && allowedTypes.includes(file.type)) {
     uploadedFile.value = file;
+    instance.importExcel(uploadedFile.value)
     message.success('Excel文件上传成功')
   } else {
     message.error('请上传 Excel 文件');

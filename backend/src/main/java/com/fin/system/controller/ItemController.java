@@ -4,19 +4,24 @@ import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fin.system.commen.R;
 import com.fin.system.entity.Item;
-import com.fin.system.entity.User;
 import com.fin.system.entity.UserInfo;
 import com.fin.system.service.ItemService;
 import com.fin.system.service.LabService;
 import org.apache.commons.lang.StringUtils;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -29,7 +34,7 @@ public class ItemController {
     private LabService labService;
 
     @GetMapping("/page")
-    public R<List<Item>> page(HttpServletRequest request, String input,String labName) {
+    public R<List<Item>> page(HttpServletRequest request, String input, String labName) {
         UserInfo user = (UserInfo) request.getSession().getAttribute("userInfo");
         String userName = user.userName;
         int roleId = user.roleId;
@@ -94,6 +99,95 @@ public class ItemController {
         try (OutputStream outputStream = response.getOutputStream()) {
             EasyExcel.write(outputStream, Item.class).sheet("items").doWrite(items);
             outputStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @PostMapping("/upload")
+    public void upload(HttpServletResponse response, @RequestParam("file") MultipartFile file) throws IOException {
+        InputStream inputStream = file.getInputStream();
+
+        Workbook workbook;
+        if (file.getOriginalFilename().endsWith(".xlsx")) {
+            workbook = new XSSFWorkbook(inputStream);
+        } else if (file.getOriginalFilename().endsWith(".xls")) {
+            workbook = new HSSFWorkbook(inputStream);
+        } else {
+            throw new IllegalArgumentException("Unsupported file format. Only .xls and .xlsx files are accepted.");
+        }
+        Sheet sheet = workbook.getSheetAt(0);
+        int rowNum = 0; // 行号
+        for (Row row : sheet) {
+            // 跳过前两行，即标题行和字段行
+            if (rowNum < 2) {
+                if (rowNum == 1) {
+                    String a = row.getCell(1).getStringCellValue();
+                    String b = row.getCell(2).getStringCellValue();
+                    String c = row.getCell(3).getStringCellValue();
+                    String d = row.getCell(4).getStringCellValue();
+                    String e = row.getCell(5).getStringCellValue();
+                    String f = row.getCell(6).getStringCellValue();
+                    String g = row.getCell(7).getStringCellValue();
+                    String h = row.getCell(8).getStringCellValue();
+                    String i = row.getCell(9).getStringCellValue();
+                    String j = row.getCell(10).getStringCellValue();
+                    String k = row.getCell(11).getStringCellValue();
+                    String l = row.getCell(12).getStringCellValue();
+                    String m = row.getCell(13).getStringCellValue();
+                    String n = row.getCell(14).getStringCellValue();
+                    String o = row.getCell(15).getStringCellValue();
+                    String p = row.getCell(16).getStringCellValue();
+                    String q = row.getCell(17).getStringCellValue();
+                    System.out.println(a);
+                }
+                rowNum++;
+                continue;
+            }
+            if (rowNum > 10) break;
+
+            String a = row.getCell(1).getStringCellValue();
+            String b = row.getCell(2).getStringCellValue();
+            String c = row.getCell(3).getStringCellValue();
+            String d = row.getCell(4).getStringCellValue();
+            String e = row.getCell(5).getStringCellValue();
+            String f = row.getCell(6).getStringCellValue();
+            String g = row.getCell(7).getStringCellValue();
+            String h = row.getCell(8).getStringCellValue();
+            String i = row.getCell(9).getStringCellValue();
+            String j = row.getCell(10).getStringCellValue();
+            String k = row.getCell(11).getStringCellValue();
+            String l = row.getCell(12).getStringCellValue();
+            String m = row.getCell(13).getStringCellValue();
+            String n = row.getCell(14).getStringCellValue();
+            String o = row.getCell(15).getStringCellValue();
+            String p = row.getCell(16).getStringCellValue();
+            String q = row.getCell(17).getStringCellValue();
+            System.out.println("类别:" + a +
+                    ",编号:" + b +
+                    ",名称:" + c +
+                    ",型号:" + d +
+                    ",采购人:" + e +
+                    ",税额:" + f +
+                    ",价值:" + g +
+                    ",净值:" + h +
+                    ",领用单位:" + i +
+                    ",领用人:" + j +
+                    ",存放地:" + k +
+                    ",出厂号:" + l +
+                    ",现状:" + m +
+                    ",入库日期:" + n +
+                    ",单位管理员备注:" + o +
+                    ",财务凭单号:" + p +
+                    ",备注:" + q);
+//            // 创建学生对象并存入数据库
+//            Student student = new Student(name, age, score);
+//            studentMapper.insert(student);
+
+            rowNum++;
+        }
+        try (OutputStream outputStream = response.getOutputStream()) {
+
         } catch (IOException e) {
             e.printStackTrace();
         }
