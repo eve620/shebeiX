@@ -8,12 +8,13 @@ import com.fin.system.entity.UserInfo;
 import com.fin.system.service.ItemService;
 import com.fin.system.service.LabService;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,6 +23,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -34,14 +37,16 @@ public class ItemController {
     private LabService labService;
 
     @GetMapping("/page")
-    public R<List<Item>> page(HttpServletRequest request, String input, String labName) {
+    public R<List<Item>> page(HttpServletRequest request, String year, String labName) {
+        System.out.println("1111111111111");
+        System.out.println(year);
         UserInfo user = (UserInfo) request.getSession().getAttribute("userInfo");
         String userName = user.userName;
         int roleId = user.roleId;
         //构造条件构造器
         LambdaQueryWrapper<Item> queryWrapper = new LambdaQueryWrapper();
         //添加过滤条件
-        queryWrapper.like(StringUtils.isNotEmpty(input), Item::getItemName, input);
+        queryWrapper.eq(StringUtils.isNotEmpty(year), Item::getCheckYear, year);
         queryWrapper.like(StringUtils.isNotEmpty(labName), Item::getLabName, labName);
         //添加排序条件
         queryWrapper.orderByDesc(Item::getUpdateTime);
@@ -105,91 +110,96 @@ public class ItemController {
     }
 
     @PostMapping("/upload")
-    public void upload(HttpServletResponse response, @RequestParam("file") MultipartFile file) throws IOException {
-        InputStream inputStream = file.getInputStream();
-
-        Workbook workbook;
-        if (file.getOriginalFilename().endsWith(".xlsx")) {
-            workbook = new XSSFWorkbook(inputStream);
-        } else if (file.getOriginalFilename().endsWith(".xls")) {
-            workbook = new HSSFWorkbook(inputStream);
-        } else {
-            throw new IllegalArgumentException("Unsupported file format. Only .xls and .xlsx files are accepted.");
-        }
-        Sheet sheet = workbook.getSheetAt(0);
-        int rowNum = 0; // 行号
-        for (Row row : sheet) {
-            // 跳过前两行，即标题行和字段行
-            if (rowNum < 2) {
-                if (rowNum == 1) {
-                    String a = row.getCell(1).getStringCellValue();
-                    String b = row.getCell(2).getStringCellValue();
-                    String c = row.getCell(3).getStringCellValue();
-                    String d = row.getCell(4).getStringCellValue();
-                    String e = row.getCell(5).getStringCellValue();
-                    String f = row.getCell(6).getStringCellValue();
-                    String g = row.getCell(7).getStringCellValue();
-                    String h = row.getCell(8).getStringCellValue();
-                    String i = row.getCell(9).getStringCellValue();
-                    String j = row.getCell(10).getStringCellValue();
-                    String k = row.getCell(11).getStringCellValue();
-                    String l = row.getCell(12).getStringCellValue();
-                    String m = row.getCell(13).getStringCellValue();
-                    String n = row.getCell(14).getStringCellValue();
-                    String o = row.getCell(15).getStringCellValue();
-                    String p = row.getCell(16).getStringCellValue();
-                    String q = row.getCell(17).getStringCellValue();
-                    System.out.println(a);
-                }
-                rowNum++;
-                continue;
+    @Transactional(rollbackFor = Exception.class)
+    public R<String> upload(HttpServletResponse response, @RequestParam("file") MultipartFile file, @RequestParam("year") String year) throws IOException {
+        try {
+            InputStream inputStream = file.getInputStream();
+            Workbook workbook;
+            if (file.getOriginalFilename().endsWith(".xlsx")) {
+                workbook = new XSSFWorkbook(inputStream);
+            } else if (file.getOriginalFilename().endsWith(".xls")) {
+                workbook = new HSSFWorkbook(inputStream);
+            } else {
+                return R.error("文件格式错误");
             }
-            if (rowNum > 10) break;
+            Sheet sheet = workbook.getSheetAt(0);
+            int rowNum = 0; // 行号
+            for (Row row : sheet) {
+                //     跳过前两行，即标题行和字段行
+                if (rowNum < 2) {
+                    if (rowNum == 1) {
+                        List<String> expectedHeaders = Arrays.asList(
+                                "序号", "类别", "编号", "名称", "型号",
+                                "采购人", "税额", "价值", "净值", "领用单位",
+                                "领用人", "存放地", "出厂号", "现状", "入库日期",
+                                "单位管理员备注", "财务凭单号", "备注"
+                        );
+                        for (int i = 0; i < row.getLastCellNum(); i++) {
+                            Cell cell = row.getCell(i);
+                            if (cell == null || cell.getCellType() != CellType.STRING || !cell.getStringCellValue().trim().equals(expectedHeaders.get(i))) {
+                                return R.error("Excel格式错误");
+                            }
+                        }
+                    }
+                    rowNum++;
+                    continue;
+                }
+                if (rowNum > 10) break;
 
-            String a = row.getCell(1).getStringCellValue();
-            String b = row.getCell(2).getStringCellValue();
-            String c = row.getCell(3).getStringCellValue();
-            String d = row.getCell(4).getStringCellValue();
-            String e = row.getCell(5).getStringCellValue();
-            String f = row.getCell(6).getStringCellValue();
-            String g = row.getCell(7).getStringCellValue();
-            String h = row.getCell(8).getStringCellValue();
-            String i = row.getCell(9).getStringCellValue();
-            String j = row.getCell(10).getStringCellValue();
-            String k = row.getCell(11).getStringCellValue();
-            String l = row.getCell(12).getStringCellValue();
-            String m = row.getCell(13).getStringCellValue();
-            String n = row.getCell(14).getStringCellValue();
-            String o = row.getCell(15).getStringCellValue();
-            String p = row.getCell(16).getStringCellValue();
-            String q = row.getCell(17).getStringCellValue();
-            System.out.println("类别:" + a +
-                    ",编号:" + b +
-                    ",名称:" + c +
-                    ",型号:" + d +
-                    ",采购人:" + e +
-                    ",税额:" + f +
-                    ",价值:" + g +
-                    ",净值:" + h +
-                    ",领用单位:" + i +
-                    ",领用人:" + j +
-                    ",存放地:" + k +
-                    ",出厂号:" + l +
-                    ",现状:" + m +
-                    ",入库日期:" + n +
-                    ",单位管理员备注:" + o +
-                    ",财务凭单号:" + p +
-                    ",备注:" + q);
-//            // 创建学生对象并存入数据库
-//            Student student = new Student(name, age, score);
-//            studentMapper.insert(student);
-
-            rowNum++;
+                String itemType = row.getCell(1).getStringCellValue();
+                String itemNumber = row.getCell(2).getStringCellValue();
+                String itemName = row.getCell(3).getStringCellValue();
+                String itemModel = row.getCell(4).getStringCellValue();
+                String itemPurchaser = row.getCell(5).getStringCellValue();
+                String itemTax = row.getCell(6).getStringCellValue();
+                String itemPrise = row.getCell(7).getStringCellValue();
+                String itemNetworth = row.getCell(8).getStringCellValue();
+                String itemUnit = row.getCell(9).getStringCellValue();
+                String userName = row.getCell(10).getStringCellValue();
+                String labName = row.getCell(11).getStringCellValue();
+                String itemSerial = row.getCell(12).getStringCellValue();
+                String itemState = row.getCell(13).getStringCellValue();
+                String itemWarehousing = row.getCell(14).getStringCellValue();
+                String itemItemUnitnote = row.getCell(15).getStringCellValue();
+                String itemTracking = row.getCell(16).getStringCellValue();
+                String itemNote = row.getCell(17).getStringCellValue();
+                Item item = new Item();
+                item.setItemType(itemType);
+                item.setItemNumber(itemNumber);
+                item.setItemName(itemName);
+                item.setItemModel(itemModel);
+                item.setItemPurchaser(itemPurchaser);
+                item.setItemTax(itemTax);
+                item.setItemPrice(itemPrise);
+                item.setItemNetworth(itemNetworth);
+                item.setItemUnit(itemUnit);
+                item.setUserName(userName);
+                item.setLabName(labName);
+                item.setItemSerial(itemSerial);
+                item.setItemStatus(itemState);
+                item.setItemWarehousing(itemWarehousing);
+                item.setItemUnitnote(itemItemUnitnote);
+                item.setItemTracking(itemTracking);
+                item.setItemNote(itemNote);
+                item.setCheckYear(year);
+                rowNum++;
+                System.out.println(item);
+                // 存入数据库
+                itemService.save(item);
+            }
+        } catch (DataAccessException e) {
+            // 检查具体的异常原因，看是否是唯一索引重复错误
+            Throwable rootCause = ExceptionUtils.getRootCause(e);
+            if (rootCause instanceof SQLIntegrityConstraintViolationException) {
+                // 如果是唯一索引重复错误，抛出自定义异常
+                return R.error("重复数据");
+            } else {
+                // 其他数据库异常处理
+                return R.error("数据上传异常");
+            }
+        } catch (Exception e) {
+            return R.error("Excel文件上传失败");
         }
-        try (OutputStream outputStream = response.getOutputStream()) {
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        return R.success("Excel文件上传成功");
     }
 }

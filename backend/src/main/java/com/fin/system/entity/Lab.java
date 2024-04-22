@@ -11,7 +11,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-public class    Lab implements Serializable {
+public class Lab implements Serializable {
     @TableId(type = IdType.AUTO)
     @ExcelProperty("序号")
     private Integer labId;

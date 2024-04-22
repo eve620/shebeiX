@@ -5,9 +5,10 @@
       <span style="color:#707070">返回</span>
     </div>
     <div class="list-content">
-      <div class="list-button"
-           @click="()=>{router.push({name: 'labDetail', query: {year:2024,id: encryptByAES(labName)}})}">
-        <span>2024年盘查</span>
+      <div class="list-button" v-for="(item) in checkList"
+           @click="addParamsAndPush(item)"
+           :key="item.id">
+        {{ item + "审查" }}
       </div>
     </div>
   </div>
@@ -18,17 +19,31 @@ import router from "@/router.js";
 import {onBeforeMount, ref} from "vue";
 import getInstance from "@/sdk/Instance.js";
 import {encryptByAES} from "@/sdk/utils.js";
+import {useRoute} from "vue-router";
 
 let user;
 const isAdmin = ref(false);
 const instance = getInstance()
 const props = defineProps(['labName']);
+const checkList = ref([]);
+const addParamsAndPush = (year) => {
+  const currentPath = router.currentRoute.value.path;
+  const currentQuery = {...router.currentRoute.value.query};
+  currentQuery.year = year;
+  router.push({
+    path: currentPath,
+    query: currentQuery
+  });
+}
 onBeforeMount(() => {
   instance.whoami().then(res => {
     if (res.data.code === 1) {
       user = res.data.data;
       isAdmin.value = user.roleId;
     }
+  })
+  instance.getYearList().then(res => {
+    checkList.value = res.data.data;
   })
 })
 

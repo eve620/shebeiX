@@ -30,6 +30,12 @@
             <a-select-option v-for="item in userList" :value="item.userName">{{ item.userName }}</a-select-option>
           </a-select>
         </a-form-item>
+        <a-form-item name="itemUnit" label="领用单位" :rules="[{ required: true, message: '请选择'}]">
+          <a-radio-group v-model:value="formData.itemUnit">
+            <a-radio-button value="教育基地">教育基地</a-radio-button>
+            <a-radio-button value="实验中心">实验中心</a-radio-button>
+          </a-radio-group>
+        </a-form-item>
         <a-form-item label="实验室">
           <a-select v-model:value="formData.labName" placeholder="请选择">
             <a-select-option v-for="item in labList" :value="item">{{ item }}</a-select-option>
@@ -40,6 +46,13 @@
             <a-radio-button value="在用">在用</a-radio-button>
             <a-radio-button value="停用">停用</a-radio-button>
           </a-radio-group>
+        </a-form-item>
+        <a-form-item label="备注">
+          <a-textarea
+              v-model:value="formData.itemNote"
+              placeholder="备注"
+              :auto-size="{ minRows: 1, maxRows: 3 }"
+          />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -73,6 +86,12 @@
             <a-select-option v-for="item in userList" :value="item.userName">{{ item.userName }}</a-select-option>
           </a-select>
         </a-form-item>
+        <a-form-item name="itemUnit" label="领用单位" :rules="[{ required: true, message: '请选择'}]">
+          <a-radio-group v-model:value="formData.itemUnit">
+            <a-radio-button value="教学基地">教学基地</a-radio-button>
+            <a-radio-button value="实验中心">实验中心</a-radio-button>
+          </a-radio-group>
+        </a-form-item>
         <a-form-item label="实验室">
           <a-select v-model:value="formData.labName" placeholder="请选择">
             <a-select-option v-for="item in labList" :value="item">{{ item }}</a-select-option>
@@ -84,23 +103,34 @@
             <a-radio-button value="停用">停用</a-radio-button>
           </a-radio-group>
         </a-form-item>
+        <a-form-item label="备注">
+          <a-textarea
+              v-model:value="formData.itemNote"
+              placeholder="备注"
+              :auto-size="{ minRows: 1, maxRows: 3 }"
+          />
+        </a-form-item>
       </a-form>
     </a-modal>
     <div style="display: flex;justify-content: space-between;padding: 0 10px">
-      <div style="cursor: pointer" @click="()=>{router.push('/home/item')}">
+      <div style="cursor: pointer" @click="()=>{router.back()}">
         <LeftOutlined style="padding:0 5px 15px 0;font-size: 15px;color:#707070"/>
         <span style="color:#707070">返回</span>
       </div>
-      <span style="color:#707070;font-weight: bold">{{ currentYear + "年审查" }}</span>
+      <div>
+        <span style="color:#707070;font-weight: bold">{{ currentYear + "年审查" }}</span>
+        <Delete @delete="deleteYear" :tagetId="currentYear" v-show="currentYear"/>
+      </div>
     </div>
     <OperationBar :addShow="isAdmin" :itemList="arr" :userList="userArr" @add="addItem" @export="download"
-                  @handleSearch="handleSearch"/>
+                  @handleSearch="handleSearch" @handleImport="handleImport"/>
     <div class="loading" v-show="!isShow">
       <a-spin size="large"/>
     </div>
     <a-table :columns="columns"
              :data-source="dataSource"
              v-show="isShow"
+             @change="handleTableChange"
              row-key="itemId"
              bordered>
       <template v-slot:bodyCell="{ column,record }">
@@ -116,7 +146,7 @@
   </div>
 </template>
 <script setup>
-import {computed, onBeforeMount, ref} from 'vue';
+import {computed, onBeforeMount, ref, watch} from 'vue';
 import getInstance from "@/sdk/Instance.js";
 import OperationBar from "@/components/OperationBar/OperationBar.vue";
 import Delete from "@/components/Delete/Delete.vue";
@@ -151,7 +181,7 @@ const onAddOk = () => {
         instance.addItem(formData.value).then(res => {
           if (res.data.code === 1) {
             message.info(res.data.data)
-            instance.getItemList().then(res => {
+            instance.getItemList(currentYear.value, null).then(res => {
               dataSourceTemplate.value = res.data.data;
               dataSource.value = res.data.data;
               isShow.value = true;
@@ -190,7 +220,7 @@ const onEditOk = () => {
         instance.editItem(formData.value).then(res => {
           if (res.data.code === 1) {
             message.info(res.data.data)
-            instance.getItemList().then(res => {
+            instance.getItemList(currentYear.value, null).then(res => {
               dataSourceTemplate.value = res.data.data;
               dataSource.value = res.data.data;
               isShow.value = true;
@@ -215,12 +245,36 @@ const deleteItem = (itemId) => {
   instance.deleteItemById(itemId).then(res => {
     if (res.data.code === 1) {
       message.info(res.data.data)
-      instance.getItemList().then(res => {
+      instance.getItemList(currentYear.value, null).then(res => {
         dataSourceTemplate.value = res.data.data;
         dataSource.value = res.data.data;
         isShow.value = true;
       })
     } else message.info(res.data.msg)
+  })
+}
+const handleImport = (file) => {
+  instance.importExcel(file, currentYear.value).then(res => {
+    if (res.data.code === 1) {
+      message.info(res.data.data)
+      instance.getItemList(currentYear.value, null).then(res => {
+        dataSourceTemplate.value = res.data.data;
+        dataSource.value = res.data.data;
+        isShow.value = true;
+      })
+    } else {
+      message.info(res.data.msg)
+    }
+  })
+}
+const deleteYear = (year) => {
+  instance.deleteYearByName(year).then(res => {
+    if (res.data.code === 1) {
+      message.info(res.data.data)
+      router.push("/home/item")
+    } else {
+      message.info(res.data.msg)
+    }
   })
 }
 onBeforeMount(() => {
@@ -240,12 +294,24 @@ onBeforeMount(() => {
       labList.value = res.data.data
     }
   })
-  instance.getItemList().then(res => {
-    dataSourceTemplate.value = res.data.data;
-    dataSource.value = res.data.data;
-    isShow.value = true;
-  })
+  if (currentYear.value) {
+    instance.getItemList(currentYear.value, null).then(res => {
+      dataSourceTemplate.value = res.data.data;
+      dataSource.value = res.data.data;
+      isShow.value = true;
+    })
+  }
 })
+watch(currentYear, (newValue, oldValue) => {
+  if (newValue) {
+    isShow.value = false
+    instance.getItemList(newValue, null).then(res => {
+      dataSourceTemplate.value = res.data.data;
+      dataSource.value = res.data.data;
+      isShow.value = true;
+    })
+  }
+});
 const download = () => {
   downloadExcel("/item", dataSource.value, "资产表.xlsx")
 }
@@ -284,6 +350,16 @@ const handleSearch = (searchParams) => {
   });
   isShow.value = true;
 };
+const handleTableChange = (pagination, filters, sorter) => {
+  console.log(filters.itemUnit);
+  if (!filters.itemUnit) {
+    dataSource.value = dataSourceTemplate.value
+  } else {
+    dataSource.value = dataSourceTemplate.value.filter((item) => {
+      return filters.itemUnit.some(keyword => item.itemUnit.includes(keyword));
+    });
+  }
+};
 const columns = [
   {
     title: '类型',
@@ -303,7 +379,7 @@ const columns = [
   {
     title: '型号',
     dataIndex: 'itemModel',
-    width: '15%',
+    width: '10%',
   }, {
     title: '价值',
     dataIndex: 'itemPrice',
@@ -313,13 +389,21 @@ const columns = [
     dataIndex: 'userName',
     width: '10%',
   }, {
+    title: '领用单位',
+    dataIndex: 'itemUnit',
+    width: '8%',
+    filters: [
+      {text: '实验中心', value: '实验中心'},
+      {text: '教学基地', value: '教学基地'},
+    ],
+  }, {
     title: '存放实验室',
     dataIndex: 'labName',
     width: '10%',
   }, {
     title: '状态',
     dataIndex: 'itemStatus',
-    width: '8%',
+    width: '5%',
   }, {
     title: '操作',
     dataIndex: 'operation',

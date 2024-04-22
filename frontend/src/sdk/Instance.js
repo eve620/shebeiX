@@ -27,9 +27,11 @@ class Instance {
             data
         })
     }
-    importExcel(file) {
+
+    importExcel(file, year) {
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('year', year.toString());
 
         return $axios({
             url: "item/upload",
@@ -40,6 +42,7 @@ class Instance {
             }
         });
     }
+
     //Auth API
     whoami() {
         return $axios({
@@ -65,12 +68,12 @@ class Instance {
     }
 
     //Item API
-    getItemList(input, labName) {
+    getItemList(year, labName) {
         return $axios({
             url: '/item/page',
             method: 'get',
             params: {
-                input,
+                year,
                 labName
             }
         })
@@ -219,6 +222,37 @@ class Instance {
                 ...params,
                 roleId: 1
             }
+        })
+    }
+
+    //Year API
+    deleteYearByName(name) {
+        return $axios({
+            url: `/year/${name}`,
+            method: 'delete'
+        })
+    }
+
+    addYear(params) {
+        return $axios({
+            url: '/year',
+            method: 'post',
+            data: {...params}
+        })
+    }
+
+    editYear(params) {
+        return $axios({
+            url: '/year',
+            method: 'put',
+            data: {...params}
+        })
+    }
+
+    getYearList() {
+        return $axios({
+            url: '/year/list',
+            method: 'get',
         })
     }
 

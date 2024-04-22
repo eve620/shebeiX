@@ -64,7 +64,6 @@ import downloadExcel from "@/sdk/exportToExcel.js";
 import router from "@/router.js";
 import {encryptByAES} from "@/sdk/utils.js";
 import {useRoute} from "vue-router";
-import NavList from "@/pages/Lab/LabCheck.vue";
 
 const instance = getInstance()
 let user;
@@ -73,7 +72,6 @@ const formData = ref({});
 const isAdmin = ref(false);
 const isAddShow = ref(false);
 const route = useRoute()
-const currentYear = computed(() => route.query.year)
 
 const setAccount = (num) => {
   formData.value.userAccount = num;

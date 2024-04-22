@@ -39,7 +39,7 @@ import {useRoute} from "vue-router";
 import {message} from "ant-design-vue";
 import getInstance from "@/sdk/Instance.js";
 
-const emit = defineEmits(['add', 'export', 'handleSearch']);
+const emit = defineEmits(['add', 'export', 'handleSearch', 'handleImport']);
 const props = defineProps(['addShow', 'itemList', 'userList']);
 const searchInput = ref('');
 const itemSelected = ref([])
@@ -59,12 +59,12 @@ const handleFileChange = (event) => {
   // 检查文件类型是否允许上传
   if (file && allowedTypes.includes(file.type)) {
     uploadedFile.value = file;
-    instance.importExcel(uploadedFile.value)
-    message.success('Excel文件上传成功')
+    // instance.importExcel(uploadedFile.value)
+    emit("handleImport", uploadedFile.value)
   } else {
     message.error('请上传 Excel 文件');
-    event.target.value = null;
   }
+  event.target.value = null;
 };
 const onSearch = () => {
   emit('handleSearch', {itemSelected: itemSelected.value, userSelected: userSelected.value});

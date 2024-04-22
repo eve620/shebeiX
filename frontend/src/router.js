@@ -31,7 +31,7 @@ const router = createRouter({
                 {
                     path: '/home/lab/detail',
                     name: 'labDetail',
-                    component: () => import('@/pages/LabDetail/LabDetail.vue'),
+                    component: () => import('@/pages/Lab/LabDetail.vue'),
                 },
                 {
                     path: '/home/user',

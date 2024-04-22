@@ -35,9 +35,6 @@
         </a-form-item>
         <a-form-item label="实验室">
           <a-input v-model:value="labName" :disabled="true"/>
-          <!--                <a-select v-model:value="formData.labName" placeholder="请选择">-->
-          <!--                    <a-select-option v-for="item in labList" :value="item">{{ item }}</a-select-option>-->
-          <!--                </a-select>-->
         </a-form-item>
         <a-form-item name="itemStatus" label="状态" :rules="[{ required: true, message: '请选择'}]">
           <a-radio-group v-model:value="formData.itemStatus">
@@ -48,7 +45,7 @@
       </a-form>
     </a-modal>
     <div style="display: flex;justify-content: space-between;padding: 0 10px">
-      <div style="cursor: pointer" @click="back">
+      <div style="cursor: pointer" @click="() => {router.back()}">
         <LeftOutlined style="padding:0 5px 15px 0;font-size: 15px;color:#707070"/>
         <span style="color:#707070">返回</span>
       </div>
@@ -119,27 +116,23 @@
     </a-table>
   </div>
   <div v-else>
-    <LabCheck labName="labName"/>
+    <LabCheck :labName="labName"/>
   </div>
 </template>
 <script setup>
-import {computed, onBeforeMount, ref} from 'vue';
+import {computed, onBeforeMount, ref, watch} from 'vue';
 import getInstance from "@/sdk/Instance.js";
 import OperationBar from "@/components/OperationBar/OperationBar.vue";
 import Delete from "@/components/Delete/Delete.vue";
 import {message} from "ant-design-vue";
 import downloadExcel from "@/sdk/exportToExcel.js";
 import {useRoute, useRouter} from "vue-router";
-import {decryptByAES} from "@/sdk/utils.js";
+import {decryptByAES, encryptByAES} from "@/sdk/utils.js";
 import LabCheck from "@/pages/Lab/LabCheck.vue";
 
 const route = useRoute()
 const router = useRouter()
 const labName = decryptByAES(route.query.id)
-const back = () => {
-  router.back()
-}
-
 const instance = getInstance()
 let user;
 let userList;
@@ -148,7 +141,6 @@ const formData = ref({});
 const isAdmin = ref(false);
 const isAddShow = ref(false);
 const currentYear = computed(() => route.query.year)
-
 const addItem = async () => {
   formData.value = {
     labName: labName
@@ -258,8 +250,8 @@ onBeforeMount(() => {
 const download = () => {
   downloadExcel("/item", dataSource.value, labName + "资产详情表.xlsx")
 }
-const dataSource = ref();
-const dataSourceTemplate = ref()
+const dataSource = ref([]);
+const dataSourceTemplate = ref([])
 const isShow = ref(false);
 const set = computed(() => {
   return new Set(dataSourceTemplate.value.map(item => (item.itemName)))

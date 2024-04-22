@@ -1,14 +1,16 @@
 <template>
-  <a-modal v-model:open="isAddCheckOpen" ok-text="确定" cancel-text="取消" @ok="" @cancel="" title="添加年份">
-    <a-input :maxlength="4" id=year v-model:value="yearInput" placeHolder="请输入年份"/>
+  <a-modal v-model:open="isAddCheckOpen" ok-text="确定" cancel-text="取消" @ok="onAddCheckOk" @cancel="onAddCheckCancel"
+           title="添加审查">
+    <a-input id=year v-model:value="yearInput" placeHolder="请输入"/>
   </a-modal>
   <div>
     <div v-show="isAdmin" style="display: block; width: 100px;margin-left: auto;margin-bottom: 10px">
       <a-button type="primary" @click="onChangeAddCheck">添加</a-button>
     </div>
     <div class="list-content">
-      <div class="list-button" @click="()=>{router.push('/home/item?year=2024')}">
-        <span>2024年盘查</span>
+      <div class="list-button" v-for="(item) in checkList" @click="()=>{router.push(`/home/item?year=${item}`)}"
+           :key="item.id">
+        {{ item + "审查" }}
       </div>
     </div>
   </div>
@@ -18,12 +20,16 @@
 import router from "@/router.js";
 import {onBeforeMount, ref} from "vue";
 import getInstance from "@/sdk/Instance.js";
+import {message} from "ant-design-vue";
+import Delete from "@/components/Delete/Delete.vue";
 
 let user;
 const isAdmin = ref(false);
+const isCheckShow = ref(false);
 const yearInput = ref("")
 const isAddCheckOpen = ref(false)
 const instance = getInstance()
+const checkList = ref([]);
 
 onBeforeMount(() => {
   instance.whoami().then(res => {
@@ -32,9 +38,31 @@ onBeforeMount(() => {
       isAdmin.value = user.roleId;
     }
   })
+  instance.getYearList().then(res => {
+    checkList.value = res.data.data;
+  })
 })
+
 const onChangeAddCheck = () => {
   isAddCheckOpen.value = true;
+}
+const onAddCheckOk = () => {
+  instance.addYear(
+      {year: yearInput.value}
+  ).then(res => {
+    if (res.data.code === 1) {
+      message.info(res.data.data)
+      instance.getYearList().then(res => {
+        checkList.value = res.data.data;
+      })
+    } else message.info(res.data.msg)
+  })
+  yearInput.value = '';
+  isAddCheckOpen.value = false;
+}
+const onAddCheckCancel = () => {
+  yearInput.value = '';
+  isAddCheckOpen.value = false;
 }
 </script>
 
