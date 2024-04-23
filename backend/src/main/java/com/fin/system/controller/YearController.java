@@ -2,9 +2,12 @@ package com.fin.system.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fin.system.commen.R;
+import com.fin.system.entity.Item;
 import com.fin.system.entity.Year;
+import com.fin.system.service.ItemService;
 import com.fin.system.service.YearService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -16,6 +19,9 @@ import java.util.function.Function;
 public class YearController {
     @Autowired
     private YearService yearService;
+
+    @Autowired
+    private ItemService itemService;
 
     //查询审查列表
     @GetMapping("/list")
@@ -38,11 +44,16 @@ public class YearController {
 
     //删除审查
     @DeleteMapping("/{year}")
+    @Transactional(rollbackFor = Exception.class)
     public R<String> deleteById(@PathVariable String year) {
         LambdaQueryWrapper<Year> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Year::getYear, year);
+        LambdaQueryWrapper<Item> itemQueryWrapper = new LambdaQueryWrapper<>();
+        itemQueryWrapper.eq(Item::getCheckYear, year);
         Boolean res = yearService.remove(queryWrapper);
-        if (res) {
+        Boolean itemRes = itemService.remove(itemQueryWrapper);
+        itemRes = itemRes || itemService.count(itemQueryWrapper) == 0;
+        if (res && itemRes) {
             return R.success("审查删除成功");
         }
         return R.error("审查删除失败");

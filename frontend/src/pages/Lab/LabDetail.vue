@@ -141,6 +141,11 @@ const formData = ref({});
 const isAdmin = ref(false);
 const isAddShow = ref(false);
 const currentYear = computed(() => route.query.year)
+// todo:做到这了
+watch(currentYear, (newValue, oldValue) => {
+  console.log(labName)
+  console.log(newValue)
+});
 const addItem = async () => {
   formData.value = {
     labName: labName
@@ -162,7 +167,7 @@ const onAddOk = () => {
         instance.addItem(formData.value).then(res => {
           if (res.data.code === 1) {
             message.info(res.data.data)
-            instance.getItemList(null, labName).then(res => {
+            instance.getItemList(currentYear, labName).then(res => {
               dataSourceTemplate.value = res.data.data
               dataSource.value = res.data.data;
               isShow.value = true;
@@ -201,7 +206,7 @@ const onEditOk = () => {
         instance.editItem(formData.value).then(res => {
           if (res.data.code === 1) {
             message.info(res.data.data)
-            instance.getItemList(null, labName).then(res => {
+            instance.getItemList(currentYear, labName).then(res => {
               dataSourceTemplate.value = res.data.data
               dataSource.value = res.data.data;
               isShow.value = true;
@@ -226,7 +231,7 @@ const deleteItem = (itemId) => {
   instance.deleteItemById(itemId).then(res => {
     if (res.data.code === 1) {
       message.info(res.data.data)
-      instance.getItemList(null, labName).then(res => {
+      instance.getItemList(currentYear, labName).then(res => {
         dataSourceTemplate.value = res.data.data
         dataSource.value = res.data.data;
         isShow.value = true;
@@ -234,6 +239,16 @@ const deleteItem = (itemId) => {
     } else message.info(res.data.msg)
   })
 }
+watch(currentYear, (newValue, oldValue) => {
+  if (newValue) {
+    isShow.value = false
+    instance.getItemList(newValue, labName).then(res => {
+      dataSourceTemplate.value = res.data.data;
+      dataSource.value = res.data.data;
+      isShow.value = true;
+    })
+  }
+});
 onBeforeMount(() => {
   instance.whoami().then(res => {
     if (res.data.code === 1) {
@@ -241,11 +256,14 @@ onBeforeMount(() => {
       isAdmin.value = user.roleId;
     }
   })
-  instance.getItemList(null, labName).then(res => {
-    dataSourceTemplate.value = res.data.data
-    dataSource.value = res.data.data;
-    isShow.value = true;
-  })
+  if (currentYear && labName) {
+    instance.getItemList(currentYear, labName).then(res => {
+      dataSourceTemplate.value = res.data.data
+      dataSource.value = res.data.data;
+      isShow.value = true;
+    })
+  }
+
 })
 const download = () => {
   downloadExcel("/item", dataSource.value, labName + "资产详情表.xlsx")

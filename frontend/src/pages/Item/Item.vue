@@ -254,6 +254,7 @@ const deleteItem = (itemId) => {
   })
 }
 const handleImport = (file) => {
+  isShow.value = false
   instance.importExcel(file, currentYear.value).then(res => {
     if (res.data.code === 1) {
       message.info(res.data.data)
@@ -264,6 +265,7 @@ const handleImport = (file) => {
       })
     } else {
       message.info(res.data.msg)
+      isShow.value = true
     }
   })
 }

@@ -7,11 +7,14 @@
     <div v-show="isAdmin" style="display: block; width: 100px;margin-left: auto;margin-bottom: 10px">
       <a-button type="primary" @click="onChangeAddCheck">添加</a-button>
     </div>
-    <div class="list-content">
+    <div class="list-content" v-if="checkList.length">
       <div class="list-button" v-for="(item) in checkList" @click="()=>{router.push(`/home/item?year=${item}`)}"
            :key="item.id">
         {{ item + "审查" }}
       </div>
+    </div>
+    <div v-else>
+      <a-empty description="请添加" />
     </div>
   </div>
 </template>

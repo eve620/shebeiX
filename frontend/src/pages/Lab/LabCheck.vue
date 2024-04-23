@@ -4,12 +4,15 @@
       <LeftOutlined style="padding:0 5px 15px 0;font-size: 15px;color:#707070;margin-left: 10px"/>
       <span style="color:#707070">返回</span>
     </div>
-    <div class="list-content">
+    <div class="list-content" v-if="checkList.length">
       <div class="list-button" v-for="(item) in checkList"
            @click="addParamsAndPush(item)"
            :key="item.id">
         {{ item + "审查" }}
       </div>
+    </div>
+    <div v-else>
+      <a-empty description="暂无数据"/>
     </div>
   </div>
 </template>

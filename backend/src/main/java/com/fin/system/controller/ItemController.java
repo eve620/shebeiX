@@ -125,6 +125,7 @@ public class ItemController {
             Sheet sheet = workbook.getSheetAt(0);
             int rowNum = 0; // 行号
             for (Row row : sheet) {
+                if (rowNum == sheet.getLastRowNum()) break;
                 //     跳过前两行，即标题行和字段行
                 if (rowNum < 2) {
                     if (rowNum == 1) {
@@ -144,7 +145,6 @@ public class ItemController {
                     rowNum++;
                     continue;
                 }
-                if (rowNum > 10) break;
 
                 String itemType = row.getCell(1).getStringCellValue();
                 String itemNumber = row.getCell(2).getStringCellValue();
