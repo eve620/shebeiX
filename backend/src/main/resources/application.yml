@@ -14,8 +14,8 @@ mybatis-plus:
     db-config:
       id-type: ASSIGN_ID
     banner: off
-#logging:
-#  level:
-#    root: off
-#    sql: off
-#    web: off
+logging:
+  level:
+    root: off
+    sql: off
+    web: off

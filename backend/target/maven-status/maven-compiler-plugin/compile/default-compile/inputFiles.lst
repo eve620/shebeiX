@@ -3,11 +3,15 @@ D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\config\Mybati
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\Mapper\UserMapper.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\service\LabService.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\service\impl\ItemServiceImpl.java
+D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\service\YearService.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\service\ItemService.java
+D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\service\impl\YearServiceImpl.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\commen\R.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\entity\User.java
+D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\Mapper\YearMapper.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\controller\ItemController.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\config\LoginFilterConfiguration.java
+D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\entity\Year.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\commen\JacksonObjectMapper.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\filter\LoginFilter.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\config\RedisConfig.java
@@ -15,6 +19,7 @@ D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\Mapper\ItemMa
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\service\UserService.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\controller\UserController.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\entity\Item.java
+D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\config\Knife4jConfiguration.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\controller\LabController.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\service\impl\UserServiceImpl.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\commen\MD5Util.java
@@ -24,4 +29,5 @@ D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\config\WebCon
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\service\impl\LabServiceImpl.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\entity\UserInfo.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\SystemApplication.java
+D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\controller\YearController.java
 D:\IT\javaIDEA\Project\shebei\backend\src\main\java\com\fin\system\config\SSOConfiguration.java

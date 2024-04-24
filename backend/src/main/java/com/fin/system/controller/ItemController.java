@@ -38,8 +38,6 @@ public class ItemController {
 
     @GetMapping("/page")
     public R<List<Item>> page(HttpServletRequest request, String year, String labName) {
-        System.out.println("1111111111111");
-        System.out.println(year);
         UserInfo user = (UserInfo) request.getSession().getAttribute("userInfo");
         String userName = user.userName;
         int roleId = user.roleId;

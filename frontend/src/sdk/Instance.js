@@ -3,8 +3,8 @@ import axios from 'axios';
 
 const $axios = axios.create({
     // baseURL: '/api', // 替换为你的 API 地址
-    // baseURL: '/',
-    baseURL: 'http://localhost:9000',
+    baseURL: '/',
+    // baseURL: 'http://localhost:9000',
     withCredentials: true
 });
 
