@@ -42,6 +42,7 @@
   </div>
   <a-table :columns="columns"
            :data-source="dataSource"
+           @change="handleTableChange"
            v-show="isShow"
            row-key="itemId"
            bordered>
@@ -211,16 +212,25 @@ const userArr = computed(() => {
   })
   return array
 })
+const itemSelected = ref([])
+const userSelected = ref([])
 const handleSearch = (searchParams) => {
   isShow.value = false;
   dataSource.value = dataSourceTemplate.value.filter((item) => {
-    const itemSelected = searchParams.itemSelected;
-    const userSelected = searchParams.userSelected;
-    const itemMatch = itemSelected.length === 0 || itemSelected.some(keyword => item.labName.includes(keyword));
-    const userMatch = userSelected.length === 0 || userSelected.some(keyword => item.userName.includes(keyword));
+    itemSelected.value = searchParams.itemSelected;
+    userSelected.value = searchParams.userSelected;
+    const itemMatch = itemSelected.value.length === 0 || itemSelected.value.some(keyword => item.labName.includes(keyword));
+    const userMatch = userSelected.value.length === 0 || userSelected.value.some(keyword => item.userName.includes(keyword));
     return itemMatch && userMatch;
   });
   isShow.value = true;
+};
+const handleTableChange = (pagination, filters, sorter) => {
+  dataSource.value = dataSourceTemplate.value.filter((item) => {
+    const itemMatch = itemSelected.value.length === 0 || itemSelected.value.some(keyword => item.itemName.includes(keyword));
+    const userMatch = userSelected.value.length === 0 || userSelected.value.some(keyword => item.userName.includes(keyword));
+    return itemMatch && userMatch;
+  });
 };
 const columns = [
   {

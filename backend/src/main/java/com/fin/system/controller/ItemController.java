@@ -48,7 +48,7 @@ public class ItemController {
         queryWrapper.like(StringUtils.isNotEmpty(labName), Item::getLabName, labName);
         //添加排序条件
         queryWrapper.orderByDesc(Item::getUpdateTime);
-        if (roleId == 0) {
+        if (roleId == 0 && !StringUtils.isNotEmpty(labName)) {
             //添加查询条件
             queryWrapper.eq(Item::getUserName, userName);
         }
@@ -181,7 +181,6 @@ public class ItemController {
                 item.setItemNote(itemNote);
                 item.setCheckYear(year);
                 rowNum++;
-                System.out.println(item);
                 // 存入数据库
                 itemService.save(item);
             }

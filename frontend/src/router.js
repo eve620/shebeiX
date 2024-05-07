@@ -39,6 +39,11 @@ const router = createRouter({
                     component: () => import('@/pages/User/User.vue'),
                 },
                 {
+                    path: '/home/file/:pathMatch(.*)*',
+                    name: 'file',
+                    component: () => import('@/pages/File/File.vue'),
+                },
+                {
                     path: '/home/manager',
                     name: 'manager',
                     component: () => import('@/pages/Manager/Manager.vue'),

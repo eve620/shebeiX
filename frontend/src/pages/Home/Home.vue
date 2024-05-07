@@ -61,6 +61,12 @@ onBeforeMount(() => {
               name: '管理员管理',
               icon: 'ToolOutlined',
               url: '/home/manager'
+            },
+            {
+              id: '5',
+              name: '文件管理',
+              icon: 'FileOutlined',
+              url: '/home/file'
             })
       }
       selectedKeys.value = menuList.find(item => url.value.startsWith(item.url)) ? [menuList.find(item => url.value.startsWith(item.url)).id] : ['1']
