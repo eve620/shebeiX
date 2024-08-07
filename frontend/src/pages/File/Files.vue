@@ -4,7 +4,7 @@
       <thead>
       <tr>
         <th>
-          <a-checkbox v-if="props.data.length>0"/>
+          <div style="width: 15px"/>
         </th>
         <th class="sortable">
           <span>文件名称</span>
@@ -21,19 +21,19 @@
       </thead>
       <tbody>
       <tr v-for="(item, index) in props.data" :key="index"
-          :class="{ 'clickable': item.contentType === 'dir' }">
+          :class="{ 'clickable': item.fileType === 'dir' }">
         <td>
-          <a-checkbox/>
+          <a-checkbox v-if='item.fileType!=="dir"' @click="() => select(item)"/>
         </td>
         <td @click="emits('onClick', item)">
-          <FolderOutlined v-if="item.contentType === 'dir'" style="margin-right: 4px;color: #888888"/>
+          <FolderOutlined v-if="item.fileType === 'dir'" style="margin-right: 4px;color: #888888"/>
           <FileOutlined v-else style="margin-right: 4px; color: #888888"/>
-          {{ item.name }}
+          {{ item.realName }}
         </td>
         <td>{{ formatBytes(item.size) }}</td>
-        <td>{{ getFileType(item.contentType) }}</td>
-        <td>{{ item.owner }}</td>
-        <td>{{ formatDate(new Date(item.created)) }}</td>
+        <td>{{ getFileType(item.fileType) }}</td>
+        <td>{{ item.createBy }}</td>
+        <td>{{ formatDate(new Date(item.createTime)) }}</td>
       </tr>
       </tbody>
     </table>
@@ -47,7 +47,7 @@
 </template>
 
 <script setup>
-import {onBeforeMount, watchEffect} from "vue";
+import {reactive, ref, watchEffect} from "vue";
 import {formatBytes, formatDate, getFileType} from "@/sdk/utils.js";
 
 const props = defineProps({
@@ -57,12 +57,24 @@ const props = defineProps({
   }
 })
 const emits = defineEmits(['onChange', 'onClick'])
-const reset = () => {
-  emits('onChange', [])
+const active = ref(new Set())
+const data = reactive(props.data)
+const currentSelect = ref()
+
+const select = (item) => {
+  currentSelect.value = item
+  // 选中和反选择
+  if (active.value.has(item)) {
+    active.value.delete(item)
+  } else {
+    active.value.add(item)
+  }
+  // TODO: 使用更加节约内存的方法
+  emits("onChange", active.value)
 }
-watchEffect(() => {
-  reset()
-}, [props.data])
+defineExpose({
+  active
+})
 </script>
 
 <style scoped lang="scss">

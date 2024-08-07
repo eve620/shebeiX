@@ -259,7 +259,7 @@ class Instance {
     //File API
     getFileList(parent) {
         return $axios({
-            url: '/file/list',
+            url: '/fileStorage/list',
             method: 'get',
             params: {
                 parent

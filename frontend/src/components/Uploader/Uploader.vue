@@ -1,28 +1,18 @@
 <template>
-  <Modal
-      ok-text="确定"
-      cancel-text="取消"
-      title="上传文件"
-      :width="'80vw'"
-      :open="active"
-      @ok="onUpload"
-      @cancel=""
+  <div onClick=""
+       onDrop=""
+       onDragOver=""
+       class="drop-area"
+       ref={inputArea}
   >
-    <div onClick=""
-         onDrop=""
-         onDragOver=""
-         class="drop-area"
-         ref={inputArea}
-    >
-      <Icon size=32 icon="upload"/>
-      <p>点击上传文件或拖动文件夹到此区域上传，最大可上传MB的文件</p>
-    </div>
-    <Progress strokeLinecap="" percent=""/>
-    <div class="upload-file-list">
-      {result}
-    </div>
-    <input ref={fileInput} type="file" onChange="" accept="" style=""/>
-  </Modal>
+    <Icon size=32 icon="upload"/>
+    <p>点击上传文件或拖动文件夹到此区域上传，最大可上传MB的文件</p>
+  </div>
+  <Progress strokeLinecap="" percent=""/>
+  <div class="upload-file-list">
+    {result}
+  </div>
+  <input ref={fileInput} type="file" onChange="" accept="" style=""/>
 </template>
 
 <script setup>

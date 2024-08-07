@@ -639,6 +639,11 @@ shallow-equal@^1.0.0:
   resolved "https://registry.npmmirror.com/shallow-equal/-/shallow-equal-1.2.1.tgz#4c16abfa56043aa20d050324efa68940b0da79da"
   integrity sha512-S4vJDjHHMBaiZuT9NPb616CSmLf618jawtv3sufLl6ivK8WocjAo58cXwbRV1cgqxH0Qbv+iUt6m05eqEa2IRA==
 
+simple-uploader.js@^0.6.0:
+  version "0.6.0"
+  resolved "https://registry.npmmirror.com/simple-uploader.js/-/simple-uploader.js-0.6.0.tgz#55724264c89ff70df4a9855bcd28eb92f0b88ced"
+  integrity sha512-EXN+o+LD6PVnfzTq/usP8k8yYrI6wKrAx8e+fPcPLVzzttonkyn1KT+Ycx5JnPBSnp6lpiVhNG4JhDJucdPnhA==
+
 "source-map-js@>=0.6.2 <2.0.0", source-map-js@^1.0.2:
   version "1.0.2"
   resolved "https://registry.npmmirror.com/source-map-js/-/source-map-js-1.0.2.tgz#adbc361d9c62df380125e7f161f71c826f1e490c"
@@ -678,6 +683,13 @@ vue-router@^4.2.5:
   integrity sha512-DIUpKcyg4+PTQKfFPX88UWhlagBEBEfJ5A8XDXRJLUnZOvcpMF8o/dnL90vpVkGaPbjvXazV/rC1qBKrZlFugw==
   dependencies:
     "@vue/devtools-api" "^6.5.0"
+
+vue-simple-uploader@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.npmmirror.com/vue-simple-uploader/-/vue-simple-uploader-1.0.3.tgz#d9f67ee7793590722c167a9d8ffe4dee112f8246"
+  integrity sha512-RIghV5rG1CaA41R7VlQP0UG9xevs+cRaCN0k7gH4cFHdG9yIf4206fGKA90NRKzlPxGSBTwLm5dCajLHfqd2+w==
+  dependencies:
+    simple-uploader.js "^0.6.0"
 
 vue-types@^3.0.0:
   version "3.0.2"

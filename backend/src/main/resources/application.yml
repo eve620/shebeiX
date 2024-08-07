@@ -6,6 +6,12 @@ spring:
     url: jdbc:mysql://localhost:3306/shebei?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
     username: u_shebei
     password: 123456
+  servlet:
+    multipart:
+      #max-file-size是formdata中单项大小限制
+      max-file-size: 100MB
+      #max-request-size是formdata中总项大小限制
+      max-request-size: 500MB
 mybatis-plus:
   configuration:
     #在映射实体或者属性时，将数据库中表名和字段名中的下划线去掉，按照驼峰命名法映射
@@ -14,8 +20,12 @@ mybatis-plus:
     db-config:
       id-type: ASSIGN_ID
     banner: off
-logging:
-  level:
-    root: off
-    sql: off
-    web: off
+#logging:
+#  level:
+#    root: off
+#    sql: off
+#    web: off
+file:
+  path: D:\tmp\file
+  # 20 * 1024 * 1024
+  chunk-size: 20971520

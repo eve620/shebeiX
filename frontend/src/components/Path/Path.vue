@@ -11,13 +11,16 @@ import Button from "@/components/Button/Button.vue";
 import {computed} from "vue";
 
 const route = useRoute();
+
 const router = useRouter()
 const onPathChange = (path) => {
   router.push("/home/file/" + (path ? path : ""))
 }
+
 const paths = computed(() => {
-  if (route.path === "/home/file/" || route.path === "/home/file") return []
-  return route.path.replace("/home/file/", "")
+  const decodePath = decodeURIComponent(route.path)
+  if (decodePath === "/home/file/" || decodePath === "/home/file") return []
+  return decodePath.replace("/home/file/", "").replace(/\/+$/, "")
       .split("/").reduce((path, currentValue, index) => {
         if (index === 0) {
           return [currentValue];

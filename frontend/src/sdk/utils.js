@@ -40,19 +40,17 @@ export function formatBytes(byteLen) {
 }
 
 export function getFileType(mimeType) {
-    if (!mimeType) {
-        return "未知"
-    }
-    if (mimeType.indexOf("image") === 0) {
-        return "图片"
-    }
-    if (mimeType === "application/vnd.ms-powerpoint") {
-        return "PPT"
-    }
-    if (mimeType === "dir") {
-        return "文件夹"
-    }
-    return "文件"
+    if(!mimeType) return "未知"
+    const mimeTypeMap = {
+        'application/x-zip-compressed': 'zip',
+        'application/pdf': 'pdf',
+        'image/jpeg': 'jpg',
+        'image/png': 'png',
+        // 可以继续添加更多映射...
+    };
+
+    // 从映射对象中查找给定的MIME类型，如果找到则返回对应的通俗类型，否则返回原MIME类型
+    return mimeTypeMap[mimeType] || mimeType;
 }
 
 export function formatDate(date) {
