@@ -1,37 +1,90 @@
 <template>
-  <div class="container">
+  <a-modal v-model:open="open" ok-text="确定" cancel-text="取消" title="文件上传" width="80vw"
+           @cancel="handleCancel"
+           :footer="[]">
     <div @dragover.prevent @drop.prevent="drop" @click="click" class="drop">
-      拖拽空间
+      <UploadOutlined style="font-size: 32px;color: #1296db"/>
+      <p>点击上传文件或拖动文件夹到此区域上传</p>
+    </div>
+    <div class="file-list-container">
+      <div :key="index" v-for="(file,index) of fileList" class="upload-file-item">
+        <span style="overflow: hidden;text-overflow: ellipsis; white-space: nowrap;padding-right: 10px">{{
+            file.file.name
+          }}</span>
+        <span>{{ formatBytes(file.file.size) }}</span>
+        <span>{{ file.currentChunk === file.totalChunks ? "上传完成" : (file.isPaused ? "等待继续" : "上传中") }}</span>
+        <div>
+          <CaretRightOutlined @click="file.resume()" v-if="file.currentChunk!==file.totalChunks && file.isPaused"
+                              style="font-size: 16px"/>
+          <PauseOutlined @click="file.pause()" v-if="file.currentChunk!==file.totalChunks && !file.isPaused"
+                         style="font-size: 16px"/>
+          <CloseOutlined @click="deleteFile(file)" v-if="file.currentChunk!==file.totalChunks && file.isPaused"
+                         style="font-size: 14px;margin-left: 5px"/>
+          <CheckOutlined v-if="file.currentChunk===file.totalChunks" style="font-size: 16px"/>
+        </div>
+      </div>
+      <!--      <button @click="check">测试上传</button>-->
     </div>
     <input ref="fileInput" class="file" @change="handleFileChange" type="file" multiple/>
-    <button class="select-button" @click="check">上传</button>
-    <div class="file-list-container">
-      文件列表
-      <ul class="file-list">
-        <li class="file-list-item" v-for="file of fileList">
-          {{ file.file.name }}
-          {{ file.currentChunk }}
-          <button @click="file.resume()">start</button>
-          <button @click="file.pause()">stop</button>
-        </li>
-      </ul>
-    </div>
-  </div>
+  </a-modal>
 </template>
 
 <script setup>
-import {nextTick, reactive, ref} from "vue";
+import {reactive, ref} from "vue";
 import {UploadFile} from "@/sdk/upload.js";
+import {message} from "ant-design-vue";
+import {UploadOutlined, CheckOutlined, PauseOutlined, CaretRightOutlined, CloseOutlined} from '@ant-design/icons-vue';
 
 const fileInput = ref(null)
-const fileList = reactive([])
+const fileList = reactive(new Set())
+const open = ref(true)
+
+function isUploading() {
+  for (let file of fileList) {
+    if ((file.currentChunk !== file.totalChunks) && !file.isPaused) {
+      return true
+    }
+  }
+  return false
+}
+
+function deleteFile(file) {
+  // todo 发送请求根据md5删除
+  fileList.delete(file)
+}
+
+function handleCancel() {
+  if (isUploading()) {
+    message.info("上传中，请暂停或等待上传完成...")
+    open.value = true
+    return
+  }
+  open.value = false
+}
 
 function handleFileChange(event) {
   const files = event.target.files;
   for (let i = 0; i < files.length; i++) {
-    fileList.push(files[i]);
+    const uploadFile = reactive(new UploadFile(files[i]))
+    fileList.add(uploadFile)
+    uploadFile.upload()
   }
-  uploadFile()
+}
+
+function formatBytes(byteLen) {
+  if (!byteLen) {
+    return ""
+  }
+  const units = ["B", "KB", "MB", "GB", "TB"]
+  let index = 0
+  while (index < units.length) {
+    if (byteLen < 1024) {
+      break;
+    }
+    byteLen = byteLen / 1024
+    index++
+  }
+  return Math.ceil(byteLen * 100) / 100 + " " + units[index];
 }
 
 function check() {
@@ -68,8 +121,12 @@ function readDirectory(directoryEntry) {
 function readFile(fileEntry) {
   fileEntry.file((file) => {
     const uploadFile = reactive(new UploadFile(file))
+    if (uploadFile.totalChunks === 0) {
+      message.info(`${uploadFile.file.name}文件为空`)
+      return
+    }
     // 在这里可以处理文件，比如上传到服务器
-    fileList.push(uploadFile)
+    fileList.add(uploadFile)
     uploadFile.upload()
   });
 }
@@ -79,120 +136,42 @@ function click() {
     fileInput.value.click();
   }
 }
-
-const uploadChunk = async (chunk, chunkNumber, totalChunks, md5) => {
-  const formData = new FormData();
-  formData.append('file', chunk);
-  formData.append('chunkNumber', chunkNumber);
-  formData.append('totalChunks', totalChunks);
-  formData.append('identifier', md5);
-  // const response = await fetch('/upload', {
-  //   method: 'POST',
-  //   body: formData,
-  // });
-  //
-  // if (!response.ok) {
-  //   throw new Error('上传分片失败');
-  // }
-};
-const CHUNK_SIZE = 1024 * 1024;
-const uploadFile = async () => {
-  if (!fileList.length) return;
-  const file = fileList[0]
-  const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-  let currentChunk = 0;
-  const md5Hash = await computeMD5(file);
-  while (currentChunk < totalChunks) {
-    const start = currentChunk * CHUNK_SIZE;
-    const end = Math.min(file.size, start + CHUNK_SIZE);
-    const chunk = file.slice(start, end);
-    try {
-      await uploadChunk(chunk, currentChunk + 1, totalChunks, md5Hash);
-      currentChunk++;
-      // progress.value = Math.round((currentChunk / totalChunks) * 100);
-    } catch (error) {
-      console.error(error);
-      break;
-    }
-  }
-  await uploadFile()
-};
-
-function computeMD5(file) {
-  return new Promise((resolve, reject) => {
-    const chunks = Math.ceil(file.size / CHUNK_SIZE);
-    let currentChunk = 0;
-    let spark = new SparkMD5.ArrayBuffer();
-    const fileReader = new FileReader();
-
-    fileReader.onload = function (e) {
-      spark.append(e.target.result); // Append array buffer
-      currentChunk++;
-
-      if (currentChunk < chunks) {
-        loadNext();
-      } else {
-        // Convert the final hash to a hexadecimal string
-        resolve(spark.end());
-      }
-    };
-
-    fileReader.onerror = reject;
-
-    function loadNext() {
-      const start = currentChunk * CHUNK_SIZE;
-      const end = ((start + CHUNK_SIZE) >= file.size) ? file.size : start + CHUNK_SIZE;
-      fileReader.readAsArrayBuffer(file.slice(start, end));
-    }
-
-    loadNext(); // Start loading the file
-  });
-}
-
 </script>
 
 <style lang="scss" scoped>
-.container {
+.upload-file-item {
+  padding: 0 10px;
+  height: 48px;
+  border-bottom: 1px solid #EBEBEB;
+  display: grid;
+  align-items: center;
+  grid-template-columns:1fr 100px  120px 60px;
+}
+
+.drop {
+  border: 2px dashed #EBEBEB;
   display: flex;
-  width: 30em;
-  margin: auto;
   flex-direction: column;
   align-items: center;
+  padding: 32px 0;
+  cursor: pointer;
 
-  .drop {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border: #4d3b3b dotted;
-    background-color: #817373;
-    width: 100%;
-    height: 10rem;
-  }
-
-  .file {
-    display: none;
-  }
-
-  .select-button {
-    cursor: pointer;
-    margin: 0.5rem 0;
-    align-self: end;
-  }
-
-  .file-list-container {
-    width: 100%;
-
-    .file-list {
-      padding: 0;
-
-      .file-list-item {
-        list-style-type: none;
-        padding: 10px;
-      }
-    }
+  p {
+    color: #414141;
   }
 }
+
+.file {
+  display: none;
+}
+
+.select-button {
+  cursor: pointer;
+  margin: 0.5rem 0;
+  align-self: end;
+}
+
+
 </style>
 
 <!--<template>-->
