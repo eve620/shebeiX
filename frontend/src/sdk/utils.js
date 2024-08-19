@@ -61,5 +61,14 @@ const formatInt = (num) => {
     return ("0" + num).slice(-2)
 }
 
+export function deletePrefixSlash(str) {
+    return str.indexOf("/") === 0 ? str.substring(1) : str
+}
 
+export function pathJoin(dir, file) {
+    if (dir === "" || dir == null) {
+        return file
+    }
+    return dir + "/" + file
+}
 

@@ -7,30 +7,31 @@
       <p>点击上传文件或拖动文件夹到此区域上传</p>
     </div>
     <div class="file-list-container">
-      <div :key="index" v-for="(file,index) of fileList" class="upload-file-item">
+      <div :key="index" v-for="(entry,index) of fileList" class="upload-file-item">
         <span style="overflow: hidden;text-overflow: ellipsis; white-space: nowrap;padding-right: 10px">{{
-            file.file.name
+            entry.name
           }}</span>
-        <span>{{ formatBytes(file.file.size) }}</span>
-        <span>{{ file.currentChunk === file.totalChunks ? "上传完成" : (file.isPaused ? "等待继续" : "上传中") }}</span>
+        <span>{{ formatBytes(entry.size) }}</span>
+        <span>{{ entry.type === "file" ? "文件" : "文件夹" }}</span>
+        <span>{{ checkUpload(entry) ? "上传完成" : (entry.isPaused ? "等待继续" : "上传中") }}</span>
         <div>
-          <CaretRightOutlined @click="file.resume()" v-if="file.currentChunk!==file.totalChunks && file.isPaused"
+          <CaretRightOutlined @click="resumeUpload(entry)" v-if="!checkUpload(entry) && entry.isPaused"
                               style="font-size: 16px"/>
-          <PauseOutlined @click="file.pause()" v-if="file.currentChunk!==file.totalChunks && !file.isPaused"
+          <PauseOutlined @click="pauseUpload(entry)" v-if="!checkUpload(entry) && !entry.isPaused"
                          style="font-size: 16px"/>
-          <CloseOutlined @click="deleteFile(file)" v-if="file.currentChunk!==file.totalChunks && file.isPaused"
+          <CloseOutlined @click="deleteFile(entry)" v-if="!checkUpload(entry) && entry.isPaused"
                          style="font-size: 14px;margin-left: 5px"/>
-          <CheckOutlined v-if="file.currentChunk===file.totalChunks" style="font-size: 16px"/>
+          <CheckOutlined v-if="checkUpload(entry)" style="font-size: 16px"/>
         </div>
       </div>
-      <!--      <button @click="check">测试上传</button>-->
+      <button @click="check">测试上传</button>
     </div>
     <input ref="fileInput" class="file" @change="handleFileChange" type="file" multiple/>
   </a-modal>
 </template>
 
 <script setup>
-import {reactive, ref} from "vue";
+import {reactive, ref, toRaw} from "vue";
 import {UploadFile} from "@/sdk/upload.js";
 import {message} from "ant-design-vue";
 import {UploadOutlined, CheckOutlined, PauseOutlined, CaretRightOutlined, CloseOutlined} from '@ant-design/icons-vue';
@@ -38,6 +39,37 @@ import {UploadOutlined, CheckOutlined, PauseOutlined, CaretRightOutlined, CloseO
 const fileInput = ref(null)
 const fileList = reactive(new Set())
 const open = ref(true)
+
+function checkUpload(file) {
+  for (let [_, value] of file.children) {
+    if (value && value.currentChunk !== value.totalChunks) {
+      return false
+    }
+  }
+  return true
+}
+
+function pauseUpload(entry) {
+  entry.isPaused = true
+  entry.children.forEach((value, _) => {
+    if (value) {
+      value.pause()
+    }
+  })
+}
+
+function resumeUpload(entry) {
+  entry.isPaused = false
+  entry.children.forEach((value, _) => {
+    if (value) {
+      value.resume()
+    }
+  })
+}
+
+function checkStatus() {
+
+}
 
 function isUploading() {
   for (let file of fileList) {
@@ -62,11 +94,32 @@ function handleCancel() {
   open.value = false
 }
 
+//点击上传
 function handleFileChange(event) {
   const files = event.target.files;
   for (let i = 0; i < files.length; i++) {
     const uploadFile = reactive(new UploadFile(files[i]))
-    fileList.add(uploadFile)
+    const children = new Map()
+    let had = false
+    for (let item of fileList) {
+      if (item.name === files[i].name) {
+        had = true
+        break
+      }
+    }
+    if (had) {
+      message.info(`${files[i].name}已存在`)
+      continue
+    }
+    children.set(files[i].name, uploadFile)
+    const entryInfo = {
+      children,
+      name: files[i].name,
+      size: files[i].size,
+      type: "file",
+      isPaused: false,
+    }
+    fileList.add(entryInfo)
     uploadFile.upload()
   }
 }
@@ -91,48 +144,95 @@ function check() {
   console.log(fileList)
 }
 
-function drop(e) {
+async function drop(e) {
   for (let i = 0; i < e.dataTransfer.items.length; i++) {
     const item = e.dataTransfer.items[i];
     if (item.webkitGetAsEntry) {
+      const children = new Map()
       const entry = item.webkitGetAsEntry();
-      if (entry.isDirectory) {
-        readDirectory(entry);
-      } else if (entry.isFile) {
-        readFile(entry);
+      let had = false
+      for (let item of fileList) {
+        if (item.name === entry.name) {
+          had = true
+          break
+        }
       }
+      if (had) {
+        message.info(`${entry.name}已存在`)
+        continue
+      }
+      const entryInfo = {
+        children,
+        name: entry.name,
+        size: 0,
+        type: entry.isDirectory ? "dir" : "file",
+        isPaused: false,
+      }
+      if (entry.isDirectory) {
+        await readDirectory(entry, entryInfo);
+      } else {
+        await readFile(entry, entryInfo);
+      }
+      entryInfo.size = Array.from(entryInfo.children.values()).reduce((acc, curr) => {
+        if (curr && curr.file) {
+          acc += curr.file.size;
+          curr.upload(); // 触发文件上传
+        }
+        return acc;
+      }, 0);
+      fileList.add(entryInfo)
     }
   }
 }
 
-function readDirectory(directoryEntry) {
+async function readDirectory(directoryEntry, entryInfo) {
   const reader = directoryEntry.createReader();
-  reader.readEntries((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isDirectory) {
-        readDirectory(entry);
-      } else if (entry.isFile) {
-        readFile(entry);
-      }
+  return new Promise((resolve) => {
+    reader.readEntries((entries) => {
+      const promises = entries.map((entry) => {
+        if (entry.isDirectory) {
+          entryInfo.children.set(entry.fullPath, null)
+          return readDirectory(entry, entryInfo);
+        } else if (entry.isFile) {
+          return readFile(entry, entryInfo);
+        }
+        return Promise.resolve();
+      });
+      Promise.all(promises).then(() => resolve());
     });
   });
+  // reader.readEntries((entries) => {
+  //   entries.forEach((entry) => {
+  //     if (entry.isDirectory) {
+  //       entryInfo.children.set(entry.fullPath, null)
+  //       readDirectory(entry, entryInfo);
+  //     } else if (entry.isFile) {
+  //       readFile(entry, entryInfo);
+  //     }
+  //   });
+  // });
 }
 
-function readFile(fileEntry) {
-  fileEntry.file((file) => {
-    const uploadFile = reactive(new UploadFile(file))
-    if (uploadFile.totalChunks === 0) {
-      message.info(`${uploadFile.file.name}文件为空`)
-      return
-    }
-    // 在这里可以处理文件，比如上传到服务器
-    fileList.add(uploadFile)
-    uploadFile.upload()
+function readFile(fileEntry, entryInfo) {
+  return new Promise((resolve, reject) => {
+    fileEntry.file((file) => {
+      const uploadFile = reactive(new UploadFile(file));
+      entryInfo.children.set(fileEntry.fullPath, uploadFile);
+      resolve();
+    }, reject);
   });
+  // fileEntry.file((file) => {
+  //   const uploadFile = reactive(new UploadFile(file))
+  //   // 在这里可以处理文件，比如上传到服务器
+  //   entryInfo.children.set(fileEntry.fullPath, uploadFile)
+  //   entryInfo.size += file.size
+  //   uploadFile.upload()
+  // });
 }
 
 function click() {
   if (fileInput.value) {
+    fileInput.value.value = ''
     fileInput.value.click();
   }
 }
@@ -145,7 +245,7 @@ function click() {
   border-bottom: 1px solid #EBEBEB;
   display: grid;
   align-items: center;
-  grid-template-columns:1fr 100px  120px 60px;
+  grid-template-columns: minmax(100px, 1fr) 90px 60px 120px 60px;
 }
 
 .drop {

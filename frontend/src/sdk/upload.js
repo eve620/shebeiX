@@ -5,7 +5,7 @@ export class UploadFile {
         this.file = file;
         this.isPaused = false; // 暂停状态
         this.currentChunk = 0; // 当前已上传的chunk索引
-        this.totalChunks = Math.ceil(this.file.size / CHUNK_SIZE);
+        this.totalChunks = Math.ceil(this.file.size / CHUNK_SIZE) === 0 ? 1 : Math.ceil(this.file.size / CHUNK_SIZE);
     }
 
     computeMD5() {
@@ -55,6 +55,7 @@ export class UploadFile {
         console.log(`Md5 ${this.md5Hash}`);
 
         while (this.currentChunk < this.totalChunks) {
+            console.log(this.file)
             if (this.isPaused) {
                 break;
             }
