@@ -67,10 +67,6 @@ function resumeUpload(entry) {
   })
 }
 
-function checkStatus() {
-
-}
-
 function isUploading() {
   for (let file of fileList) {
     if ((file.currentChunk !== file.totalChunks) && !file.isPaused) {
@@ -201,16 +197,6 @@ async function readDirectory(directoryEntry, entryInfo) {
       Promise.all(promises).then(() => resolve());
     });
   });
-  // reader.readEntries((entries) => {
-  //   entries.forEach((entry) => {
-  //     if (entry.isDirectory) {
-  //       entryInfo.children.set(entry.fullPath, null)
-  //       readDirectory(entry, entryInfo);
-  //     } else if (entry.isFile) {
-  //       readFile(entry, entryInfo);
-  //     }
-  //   });
-  // });
 }
 
 function readFile(fileEntry, entryInfo) {
@@ -221,13 +207,6 @@ function readFile(fileEntry, entryInfo) {
       resolve();
     }, reject);
   });
-  // fileEntry.file((file) => {
-  //   const uploadFile = reactive(new UploadFile(file))
-  //   // 在这里可以处理文件，比如上传到服务器
-  //   entryInfo.children.set(fileEntry.fullPath, uploadFile)
-  //   entryInfo.size += file.size
-  //   uploadFile.upload()
-  // });
 }
 
 function click() {
