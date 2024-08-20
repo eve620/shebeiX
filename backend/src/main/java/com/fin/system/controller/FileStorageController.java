@@ -4,6 +4,7 @@ package com.fin.system.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fin.system.commen.R;
 import com.fin.system.dto.FileChunkDto;
+import com.fin.system.entity.FileChunk;
 import com.fin.system.entity.FileStorage;
 import com.fin.system.service.FileChunkService;
 import com.fin.system.service.FileStorageService;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -72,7 +74,7 @@ public class FileStorageController {
      * @return vo
      */
     @GetMapping("/upload")
-    public R<CheckResultVo> checkUpload(FileChunkDto dto) {
+    public R<CheckResultVo> AcheckUpload(FileChunkDto dto) {
         String filePath = dto.getRelativePath();
         if (!Objects.equals(dto.getDirPath(), "")) {
             filePath = dto.getDirPath() + "/" + dto.getRelativePath();
@@ -113,6 +115,24 @@ public class FileStorageController {
             return R.error("上传失败");
         }
     }
+
+    @GetMapping("/check/{md5}")
+    public R<CheckResultVo> checkUpload(@PathVariable String md5) {
+        LambdaQueryWrapper<FileChunk> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(FileChunk::getIdentifier, md5);
+        List<FileChunk> uploadedChunks = fileChunkService.list(queryWrapper);
+        CheckResultVo res = new CheckResultVo();
+        res.setUploaded(false);
+        List<Integer> chunkNums = uploadedChunks.stream()
+                .map(FileChunk::getChunkNumber)
+                .toList();
+        res.setUploadedChunks(chunkNums);
+        if (chunkNums.size() == uploadedChunks.get(0).getTotalChunk()) {
+            res.setUploaded(true);
+        }
+        return R.success(res);
+    }
+
 
     /**
      * 下载接口，这里只做了普通的下载

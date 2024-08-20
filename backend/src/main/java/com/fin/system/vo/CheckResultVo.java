@@ -18,8 +18,6 @@ public class CheckResultVo {
      */
     private Boolean uploaded;
 
-    private String url;
-
     private List<Integer> uploadedChunks;
 }
 

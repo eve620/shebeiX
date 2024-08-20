@@ -266,4 +266,11 @@ class Instance {
             }
         })
     }
+
+    checkFile(md5) {
+        return $axios({
+            url: `/fileStorage/check/${md5}`,
+            method: 'get',
+        })
+    }
 }
