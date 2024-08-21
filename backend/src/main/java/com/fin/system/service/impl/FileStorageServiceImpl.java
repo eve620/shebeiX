@@ -57,7 +57,7 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
         if (dto.getFile() == null) {
             throw new RuntimeException("文件不能为空");
         }
-        String fullFileName = baseFileSavePath + File.separator + dto.getFilename();
+        String fullFileName = baseFileSavePath + File.separator + dto.getIdentifier();
         Path directoryPath = Paths.get(fullFileName).getParent();
         // 检查目录是否存在，不存在则创建
         if (!directoryPath.toFile().exists()) {
@@ -140,7 +140,7 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
         if (dto.getChunkNumber().equals(dto.getTotalChunks())) {
             String name = dto.getFilename();
             MultipartFile file = dto.getFile();
-
+            System.out.println(file);
             FileStorage fileStorage = new FileStorage();
             fileStorage.setRealName(file.getOriginalFilename());
             fileStorage.setFileName(fileName);

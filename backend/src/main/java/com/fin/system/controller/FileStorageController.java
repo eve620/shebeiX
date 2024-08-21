@@ -127,12 +127,17 @@ public class FileStorageController {
                 .map(FileChunk::getChunkNumber)
                 .toList();
         res.setUploadedChunks(chunkNums);
+        if (chunkNums.isEmpty()) return R.success(res);
         if (chunkNums.size() == uploadedChunks.get(0).getTotalChunk()) {
             res.setUploaded(true);
         }
         return R.success(res);
     }
 
+    @PostMapping("/createDir")
+    public R<String> createDir() {
+        return R.success("创建成功");
+    }
 
     /**
      * 下载接口，这里只做了普通的下载

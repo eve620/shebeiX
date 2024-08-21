@@ -35,10 +35,14 @@ import {reactive, ref, toRaw} from "vue";
 import {UploadFile} from "@/sdk/upload.js";
 import {message} from "ant-design-vue";
 import {UploadOutlined, CheckOutlined, PauseOutlined, CaretRightOutlined, CloseOutlined} from '@ant-design/icons-vue';
+import {deletePrefixSlash} from "@/sdk/utils.js";
+import getInstance from "@/sdk/Instance.js";
 
 const fileInput = ref(null)
 const fileList = reactive(new Set())
 const open = ref(true)
+const dirPath = ref("")
+const instance = getInstance()
 
 function checkUpload(file) {
   for (let [_, value] of file.children) {
@@ -116,7 +120,7 @@ function handleFileChange(event) {
       isPaused: false,
     }
     fileList.add(entryInfo)
-    uploadFile.upload()
+    uploadFile.upload(deletePrefixSlash(files[i].name), dirPath.value)
   }
 }
 
@@ -165,17 +169,17 @@ async function drop(e) {
         isPaused: false,
       }
       if (entry.isDirectory) {
+        //todo
+        await instance.createDir({path: ""})
         await readDirectory(entry, entryInfo);
       } else {
         await readFile(entry, entryInfo);
       }
-      entryInfo.size = Array.from(entryInfo.children.values()).reduce((acc, curr) => {
-        if (curr && curr.file) {
-          acc += curr.file.size;
-          curr.upload(); // 触发文件上传
-        }
-        return acc;
-      }, 0);
+      entryInfo.size = Array.from(entryInfo.children.values())
+          .reduce((totalSize, child) => totalSize + child.file.size, 0);
+      for (const [key, value] of entryInfo.children) {
+        value.upload(deletePrefixSlash(key), dirPath.value);
+      }
       fileList.add(entryInfo)
     }
   }
@@ -187,7 +191,7 @@ async function readDirectory(directoryEntry, entryInfo) {
     reader.readEntries((entries) => {
       const promises = entries.map((entry) => {
         if (entry.isDirectory) {
-          entryInfo.children.set(entry.fullPath, null)
+          instance.createDir({path: ""})
           return readDirectory(entry, entryInfo);
         } else if (entry.isFile) {
           return readFile(entry, entryInfo);

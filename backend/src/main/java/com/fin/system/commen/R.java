@@ -15,8 +15,6 @@ public class R<T> implements Serializable {
 
     private T data; //数据
 
-    private Map map = new HashMap(); //动态数据
-
     public static <T> R<T> success(T object) {
         R<T> r = new R<T>();
         r.data = object;
@@ -36,11 +34,6 @@ public class R<T> implements Serializable {
         r.msg = msg;
         r.code = 0;
         return r;
-    }
-
-    public R<T> add(String key, Object value) {
-        this.map.put(key, value);
-        return this;
     }
 
 }

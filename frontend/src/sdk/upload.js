@@ -43,18 +43,18 @@ export class UploadFile {
         });
     }
 
-    async uploadChunk(chunk, chunkNumber) {
-        console.log(chunk)
-// 实现上传单个chunk的逻辑
-// 这里应该是实际的上传逻辑，现在假设成功
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve();
-            }, 300);
-        });
-    }
+//     async uploadChunk(chunk, chunkNumber) {
+//         console.log(chunk)
+// // 实现上传单个chunk的逻辑
+// // 这里应该是实际的上传逻辑，现在假设成功
+//         return new Promise((resolve) => {
+//             setTimeout(() => {
+//                 resolve();
+//             }, 300);
+//         });
+//     }
 
-    async upload() {
+    async upload(relativePath, dirPath) {
         this.currentChunk = 0
         this.md5Hash = await this.computeMD5();
         await instance.checkFile(this.md5Hash).then((res) => {
@@ -76,8 +76,25 @@ export class UploadFile {
             const start = this.currentChunk * CHUNK_SIZE;
             const end = Math.min(this.file.size, start + CHUNK_SIZE);
             const chunk = this.file.slice(start, end);
+            const fileChunk = new File([chunk], this.file.name, {type: this.file.type});
+            const formData = new FormData();
+            formData.append('chunkNumber', this.currentChunk + 1);
+            formData.append('totalChunks', this.totalChunks);
+            formData.append('chunkSize', CHUNK_SIZE); // 使用实际的slice大小
+            formData.append('currentChunkSize', end - start); // 使用实际的slice大小
+            formData.append('totalSize', this.file.size); // 使用整个文件的大小
+            formData.append('identifier', this.md5Hash);
+            formData.append('filename', this.file.name); // 使用文件的实际名称
+            formData.append('relativePath', relativePath); // 如果你需要相对路径W
+            formData.append('dirPath', dirPath || ""); // 如果你需要绝对路径
+            formData.append('file', fileChunk); // 添加文件切片
             try {
-                await this.uploadChunk(chunk, this.currentChunk + 1);
+                instance.uploadFileChunk(formData).then(res => {
+                    console.log(res)
+                }).catch(e => {
+                    console.log(e)
+                })
+                // await this.uploadChunk(chunk, this.currentChunk + 1);
                 this.currentChunk++;
 // 进度更新等逻辑...
             } catch (error) {

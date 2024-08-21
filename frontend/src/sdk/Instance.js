@@ -273,4 +273,20 @@ class Instance {
             method: 'get',
         })
     }
+
+    uploadFileChunk(params) {
+        return $axios({
+            url: `/fileStorage/upload`,
+            method: 'post',
+            data: params
+        })
+    }
+
+    createDir(params) {
+        return $axios({
+            url: `/fileStorage/createDir`,
+            method: 'post',
+            data: {...params}
+        })
+    }
 }
