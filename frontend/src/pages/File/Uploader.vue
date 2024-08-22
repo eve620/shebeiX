@@ -110,7 +110,7 @@ function handleFileChange(event) {
       isPaused: false,
     }
     fileList.add(entryInfo)
-    uploadFile.upload(deletePrefixSlash(props.path + files[i].name), dirPath.value)
+    uploadFile.upload(deletePrefixSlash(props.path + "/" + files[i].name), dirPath.value)
   }
 }
 
