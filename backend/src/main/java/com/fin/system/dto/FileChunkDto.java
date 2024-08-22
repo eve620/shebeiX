@@ -55,4 +55,8 @@ public class FileChunkDto {
      * 文件
      */
     private MultipartFile file;
+    /**
+     * 创建人
+     */
+    private String createBy;
 }

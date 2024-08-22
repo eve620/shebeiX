@@ -148,6 +148,7 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
             fileStorage.setFileType(file.getContentType());
             fileStorage.setSize(dto.getTotalSize());
             fileStorage.setIdentifier(dto.getIdentifier());
+            fileStorage.setCreateBy(dto.getCreateBy());
             if (Objects.equals(dto.getDirPath(), "")) {
                 fileStorage.setFilePath(dto.getRelativePath());
             } else {

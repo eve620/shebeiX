@@ -1,6 +1,5 @@
 <template>
   <div>
-    <!--    <Uploader onSuccess="onUploadSuccess" ref="uploader"/>-->
     <a-modal okText="确定" cancelText="取消" title="新建文件夹" v-model:open="isNewDirOpen" @ok="onCreateDirOk">
       <a-input type="text" placeholder="文件夹名称" v-model:value="newDirName"/>
     </a-modal>
@@ -10,8 +9,10 @@
     <a-modal okText="确定" cancelText="取消" title="删除文件" v-model:open="isDelete">
       确认删除所选文件吗？
     </a-modal>
-    <a-modal okText="确定" cancelText="取消" title="上传文件" v-model:open="isUpload">
-      <Uploader @refreshDir="refreshDir" :path="path"/>
+    <a-modal v-model:open="isUpload" ok-text="确定" cancel-text="取消" title="文件上传" width="80vw"
+             @cancel="handleCancel"
+             :footer="[]">
+      <Uploader ref="uploaderRef" @refreshDir="refreshDir" :isUpload="isUpload" :path="path"/>
     </a-modal>
     <div class="file-container">
       <div class="file-menus">
@@ -41,11 +42,29 @@ import {useRoute} from "vue-router";
 import getInstance from "@/sdk/Instance.js";
 import router from "@/router.js";
 import Uploader from "@/pages/File/Uploader.vue";
+import {message} from "ant-design-vue";
 
 const route = useRoute()
 const file = ref([])
-const set = new Set()
 const filesRef = ref(null)
+const uploaderRef = ref()
+
+function handleCancel() {
+  if (uploaderRef.value.fileList.size) {
+    for (let file of uploaderRef.value.fileList) {
+      if ((file.currentChunk !== file.totalChunks) && file.isPaused) {
+        message.info("上传中，请暂停或等待上传完成...")
+        isUpload.value = true
+        return
+      }
+    }
+    uploaderRef.value.clearFilesList()
+    refreshDir()
+  }
+  isUpload.value = false
+}
+
+
 const download = () => {
   if (filesRef.value) {
     filesRef.value.active.forEach((item) => {

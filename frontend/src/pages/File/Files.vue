@@ -47,8 +47,9 @@
 </template>
 
 <script setup>
-import {reactive, ref, watchEffect} from "vue";
+import {reactive, ref} from "vue";
 import {formatBytes, formatDate, getFileType} from "@/sdk/utils.js";
+import {FolderOutlined, FileOutlined} from '@ant-design/icons-vue';
 
 const props = defineProps({
   data: {

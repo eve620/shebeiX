@@ -7,6 +7,7 @@ import com.fin.system.commen.R;
 import com.fin.system.dto.FileChunkDto;
 import com.fin.system.entity.FileChunk;
 import com.fin.system.entity.FileStorage;
+import com.fin.system.entity.UserInfo;
 import com.fin.system.service.FileChunkService;
 import com.fin.system.service.FileStorageService;
 import com.fin.system.vo.CheckResultVo;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -103,7 +105,14 @@ public class FileStorageController {
      * @return boolean
      */
     @PostMapping("/upload")
-    public R<Boolean> upload(FileChunkDto dto, HttpServletResponse response) {
+    public R<Boolean> upload(HttpServletRequest request, FileChunkDto dto, HttpServletResponse response) {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("userInfo") == null) {
+            return R.error("用户未登录");
+        } else {
+            UserInfo user = (UserInfo) session.getAttribute("userInfo");
+            dto.setCreateBy(user.userName);
+        }
         try {
             Boolean status = fileStorageService.uploadFile(dto);
             if (status) {
@@ -138,15 +147,26 @@ public class FileStorageController {
     }
 
     @PostMapping("/createDir")
-    public R<String> createDir(@RequestBody String dirPath) {
-        System.out.println(dirPath);
+    public R<String> createDir(HttpServletRequest request, @RequestBody String dirPath) {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("userInfo") == null) {
+            return R.error("用户未登录");
+        }
+        //检查是否已创建
+        LambdaQueryWrapper<FileStorage> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(FileStorage::getFileType, "dir");
+        queryWrapper.eq(FileStorage::getFilePath, dirPath);
+        FileStorage storage = fileStorageService.getOne(queryWrapper);
+        if (storage != null) return R.success("文件夹已创建");
+        UserInfo user = (UserInfo) session.getAttribute("userInfo");
+
         Path filePath = Paths.get(dirPath);
-        String a = filePath.getFileName().toString();
-        System.out.println(a);
+        String dirName = filePath.getFileName().toString();
         FileStorage fileStorage = new FileStorage();
-        fileStorage.setRealName(a);
+        fileStorage.setRealName(dirName);
         fileStorage.setFileType("dir");
         fileStorage.setFilePath(dirPath);
+        fileStorage.setCreateBy(user.userName);
         fileStorageService.save(fileStorage);
         return R.success("文件夹创建成功");
     }

@@ -89,11 +89,12 @@ export class UploadFile {
             formData.append('dirPath', dirPath || ""); // 如果你需要绝对路径
             formData.append('file', fileChunk); // 添加文件切片
             try {
-                instance.uploadFileChunk(formData).then(res => {
-                    console.log(res)
-                }).catch(e => {
-                    console.log(e)
-                })
+                await instance.uploadFileChunk(formData)
+                // instance.uploadFileChunk(formData).then(res => {
+                //     console.log(res)
+                // }).catch(e => {
+                //     console.log(e)
+                // })
                 // await this.uploadChunk(chunk, this.currentChunk + 1);
                 this.currentChunk++;
 // 进度更新等逻辑...
