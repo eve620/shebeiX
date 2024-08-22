@@ -1,6 +1,7 @@
 package com.fin.system.controller;
 
 
+import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fin.system.commen.R;
 import com.fin.system.dto.FileChunkDto;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -135,8 +138,17 @@ public class FileStorageController {
     }
 
     @PostMapping("/createDir")
-    public R<String> createDir() {
-        return R.success("创建成功");
+    public R<String> createDir(@RequestBody String dirPath) {
+        System.out.println(dirPath);
+        Path filePath = Paths.get(dirPath);
+        String a = filePath.getFileName().toString();
+        System.out.println(a);
+        FileStorage fileStorage = new FileStorage();
+        fileStorage.setRealName(a);
+        fileStorage.setFileType("dir");
+        fileStorage.setFilePath(dirPath);
+        fileStorageService.save(fileStorage);
+        return R.success("文件夹创建成功");
     }
 
     /**

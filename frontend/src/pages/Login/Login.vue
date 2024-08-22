@@ -170,7 +170,7 @@ async function drop(e) {
       }
       if (entry.isDirectory) {
         //todo
-        await instance.createDir({path: ""})
+        await instance.createDir(deletePrefixSlash(entry.fullPath))
         await readDirectory(entry, entryInfo);
       } else {
         await readFile(entry, entryInfo);
@@ -191,7 +191,7 @@ async function readDirectory(directoryEntry, entryInfo) {
     reader.readEntries((entries) => {
       const promises = entries.map((entry) => {
         if (entry.isDirectory) {
-          instance.createDir({path: ""})
+          instance.createDir(deletePrefixSlash(entry.fullPath))
           return readDirectory(entry, entryInfo);
         } else if (entry.isFile) {
           return readFile(entry, entryInfo);

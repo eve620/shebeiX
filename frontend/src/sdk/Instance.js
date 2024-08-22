@@ -282,11 +282,14 @@ class Instance {
         })
     }
 
-    createDir(params) {
+    createDir(dirPath) {
         return $axios({
             url: `/fileStorage/createDir`,
             method: 'post',
-            data: {...params}
+            headers: {
+                'Content-Type': 'text/plain' // 指定发送的是纯文本
+            },
+            data: dirPath
         })
     }
 }
