@@ -1,12 +1,12 @@
 <template>
   <div>
     <a-modal okText="确定" cancelText="取消" title="新建文件夹" v-model:open="isNewDirOpen" @ok="onCreateDirOk">
-      <a-input type="text" placeholder="文件夹名称" v-model:value="newDirName"/>
+      <a-input type="text" placeholder="文件夹名称" v-model:value="newName"/>
     </a-modal>
-    <a-modal okText="确定" cancelText="取消" title="修改文件名" v-model:open="isModifyDirNameActive">
-      <a-input type="text" placeholder="新文件名" v-model:value="newDirName"/>
+    <a-modal okText="确定" cancelText="取消" title="修改文件名" v-model:open="isRenameActive" @ok="rename">
+      <a-input type="text" placeholder="新文件名" v-model:value="newName"/>
     </a-modal>
-    <a-modal okText="确定" cancelText="取消" title="删除文件" v-model:open="isDelete">
+    <a-modal okText="确定" cancelText="取消" title="删除文件" @ok="deleteFileOrDir" v-model:open="isDelete">
       确认删除所选文件吗？
     </a-modal>
     <a-modal v-model:open="isUpload" ok-text="确定" cancel-text="取消" title="文件上传" width="80vw"
@@ -19,10 +19,8 @@
         <Path/>
         <div class="flex-spacer"></div>
         <div class="button-groups">
-          <Button v-show="isDeleteShow" text="删除" @click="" icon="trash"/>
-          <Button v-show="isRenameShow" text="重命名" @click="" icon="modify"/>
-          <Button v-show="isCutShow" text="剪切" @click="" icon="cut"/>
-          <Button v-show="isPasteShow" text="粘贴" @click="" icon="paste"/>
+          <Button v-show="isDeleteShow" text="删除" @click="isDelete = true" icon="trash"/>
+          <Button v-show="isRenameShow" text="重命名" @click="isRenameActive=true" icon="modify"/>
           <Button v-show="isDownloadShow" text="下载" @click="download" icon="download"/>
           <Button v-show="isUploadShow" text="上传" @click="isUpload=true" icon="upload"/>
           <Button v-show="isCreateDirShow" text="新建" @click="isNewDirOpen=true" icon="create"/>
@@ -48,6 +46,32 @@ const route = useRoute()
 const file = ref([])
 const filesRef = ref(null)
 const uploaderRef = ref()
+const newName = ref("");
+const isUpload = ref(false)
+const isNewDirOpen = ref(false)
+const isDelete = ref(false)
+const isRenameActive = ref(false)
+const isRenameShow = ref(false)
+const isDownloadShow = ref(false)
+const isDeleteShow = ref(false)
+const isUploadShow = ref(false)
+const isCreateDirShow = ref(false)
+const instance = getInstance()
+const path = computed(() => {
+  const decodedPath = decodeURIComponent(route.path);
+  if (decodedPath === '/home/file' || decodedPath === '/home/file/') return '';
+  return decodedPath.replace('/home/file/', '').replace(/\/+$/, '');
+});
+
+function rename() {
+  message.info(newName.value)
+  isRenameActive.value = false
+}
+
+function deleteFileOrDir() {
+  message.info("删除成功")
+  isDelete.value = false
+}
 
 function handleCancel() {
   if (uploaderRef.value.fileList.size) {
@@ -64,8 +88,7 @@ function handleCancel() {
   isUpload.value = false
 }
 
-
-const download = () => {
+function download() {
   if (filesRef.value) {
     filesRef.value.active.forEach((item) => {
       if (item.identifier) {
@@ -81,52 +104,35 @@ function downloadFile(identifier, id) {
   window.location.href = `http://localhost:9000/fileStorage/download/${identifier}`;
 }
 
-const newDirName = ref("");
-
-const isUpload = ref(false)
-const isNewDirOpen = ref(false)
-const isDelete = ref(false)
-const isModifyDirNameActive = ref(false)
-const isPasteShow = ref(false)
-const isRenameShow = ref(false)
-const isDownloadShow = ref(false)
-const isDeleteShow = ref(false)
-const isCutShow = ref(false)
-const isUploadShow = ref(false)
-const isCreateDirShow = ref(false)
-let register = ref(undefined)
-const instance = getInstance()
-const path = computed(() => {
-  const decodedPath = decodeURIComponent(route.path);
-  if (decodedPath === '/home/file' || decodedPath === '/home/file/') return '';
-  return decodedPath.replace('/home/file/', '').replace(/\/+$/, '');
-});
-const downloadOrOpen = (file) => {
+function downloadOrOpen(file) {
   // 大卡文件夹
   if (file.fileType === "dir") {
     const newPath = path.value.length === 0 ? "/home/file/" + file.realName : "/home/file/" + path.value + "/" + file.realName
     router.push(newPath)
   }
 }
-const onCreateDirOk = async () => {
+
+async function onCreateDirOk() {
   const dirName = getInputValue()
   if (!isValidFilename(dirName)) {
     Pop({message: "文件夹名称不规范"})
     return
   }
   instance.createDir(pathJoin(path, dirName)).then(() => {
-    newDirName.current.reset()
+    newName.current.reset()
     refreshDir()
   }).catch(errHandler)
   setIsNewDirOpen(false)
 }
-const refreshDir = () => {
+
+function refreshDir() {
   instance.getFileList(path.value).then(res => {
     if (res) {
       file.value = res.data.data
     }
   }).catch(error => console.error(error))
 }
+
 onBeforeMount(() => {
   refreshDir()
 })
@@ -135,7 +141,8 @@ watch(path, () => {
     refreshDir()
   }
 })
-const fileSelectedChange = (selected) => {
+
+function fileSelectedChange(selected) {
   isDownloadShow.value = selected && selected.size > 0
   instance.whoami().then(res => {
     if (!res) {
@@ -143,18 +150,15 @@ const fileSelectedChange = (selected) => {
       isCreateDirShow.value = false
       isDeleteShow.value = false
       isRenameShow.value = false
-      isPasteShow.value = false
-      isCutShow.value = false
       return
     }
-    isCutShow.value = selected && selected.size > 0
-    isPasteShow.value = register.value !== undefined
     isRenameShow.value = selected && selected.size === 1
     isDeleteShow.value = selected && selected.size > 0
     isUploadShow.value = true
     isCreateDirShow.value = true
   })
 }
+
 onBeforeMount(() => {
   instance.whoami().then(res => {
     if (res.data.data.roleId) {
