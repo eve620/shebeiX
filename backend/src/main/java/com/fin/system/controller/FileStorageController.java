@@ -1,6 +1,7 @@
 package com.fin.system.controller;
 
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fin.system.commen.R;
@@ -109,10 +110,9 @@ public class FileStorageController {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userInfo") == null) {
             return R.error("用户未登录");
-        } else {
-            UserInfo user = (UserInfo) session.getAttribute("userInfo");
-            dto.setCreateBy(user.userName);
         }
+        UserInfo user = (UserInfo) session.getAttribute("userInfo");
+        dto.setCreateBy(user.userName);
         try {
             Boolean status = fileStorageService.uploadFile(dto);
             if (status) {
@@ -128,20 +128,40 @@ public class FileStorageController {
         }
     }
 
-    @GetMapping("/check/{md5}")
-    public R<CheckResultVo> checkUpload(@PathVariable String md5) {
-        LambdaQueryWrapper<FileChunk> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(FileChunk::getIdentifier, md5);
-        List<FileChunk> uploadedChunks = fileChunkService.list(queryWrapper);
-        CheckResultVo res = new CheckResultVo();
-        res.setUploaded(false);
+    @GetMapping("/check")
+    public R<CheckResultVo> checkUpload(HttpServletRequest request, String md5, String filePath) {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("userInfo") == null) {
+            return R.error("用户未登录");
+        }
+        UserInfo user = (UserInfo) session.getAttribute("userInfo");
+        LambdaQueryWrapper<FileChunk> chunkQueryWrapper = new LambdaQueryWrapper<>();
+        chunkQueryWrapper.eq(FileChunk::getIdentifier, md5);
+        List<FileChunk> uploadedChunks = fileChunkService.list(chunkQueryWrapper);
         List<Integer> chunkNums = uploadedChunks.stream()
                 .map(FileChunk::getChunkNumber)
                 .toList();
+        CheckResultVo res = new CheckResultVo();
+        res.setUploaded(false);
         res.setUploadedChunks(chunkNums);
         if (chunkNums.isEmpty()) return R.success(res);
-        if (chunkNums.size() == uploadedChunks.get(0).getTotalChunk()) {
+        LambdaQueryWrapper<FileStorage> storageQueryWrapper = new LambdaQueryWrapper<>();
+        storageQueryWrapper.eq(FileStorage::getIdentifier, md5);
+        List<FileStorage> storages = fileStorageService.list(storageQueryWrapper);
+        if (!storages.isEmpty()) {
             res.setUploaded(true);
+            for (FileStorage storage : storages) {
+                if (Objects.equals(storage.getFilePath(), filePath)) {
+                    return R.success(res);
+                }
+            }
+            FileStorage storageCopy = BeanUtil.copyProperties(storages.get(0), FileStorage.class);
+            storageCopy.setId(null);
+            storageCopy.setCreateBy(user.userName);
+            storageCopy.setFilePath(filePath);
+            storageCopy.setCreateTime(null);
+            storageCopy.setUpdateTime(null);
+            fileStorageService.save(storageCopy);
         }
         return R.success(res);
     }

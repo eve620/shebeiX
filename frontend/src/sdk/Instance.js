@@ -267,10 +267,14 @@ class Instance {
         })
     }
 
-    checkFile(md5) {
+    checkFile(md5, filePath) {
         return $axios({
-            url: `/fileStorage/check/${md5}`,
+            url: `/fileStorage/check`,
             method: 'get',
+            params: {
+                md5,
+                filePath
+            }
         })
     }
 
@@ -290,6 +294,14 @@ class Instance {
                 'Content-Type': 'text/plain' // 指定发送的是纯文本
             },
             data: dirPath
+        })
+    }
+
+    deleteFileOrDir(filePath) {
+        return $axios({
+            url: "",
+            method: "delete",
+            params: {filePath}
         })
     }
 }

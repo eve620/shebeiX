@@ -1,5 +1,7 @@
 <template>
-  <div>
+  <a-modal v-model:open="open" ok-text="确定" cancel-text="取消" title="文件上传" width="80vw"
+           @cancel="handleCancel"
+           :footer="[]">
     <div @dragover.prevent @drop.prevent="drop" @click="click" class="drop">
       <UploadOutlined style="font-size: 32px;color: #1296db"/>
       <p>点击上传文件或拖动文件夹到此区域上传</p>
@@ -23,13 +25,13 @@
         </div>
       </div>
       <button @click="check">测试上传</button>
-      <input ref="fileInput" class="file" @change="handleFileChange" type="file" multiple/>
     </div>
-  </div>
+    <input ref="fileInput" class="file" @change="handleFileChange" type="file" multiple/>
+  </a-modal>
 </template>
 
 <script setup>
-import {reactive, ref} from "vue";
+import {reactive, ref, toRaw} from "vue";
 import {UploadFile} from "@/sdk/upload.js";
 import {message} from "ant-design-vue";
 import {UploadOutlined, CheckOutlined, PauseOutlined, CaretRightOutlined, CloseOutlined} from '@ant-design/icons-vue';
@@ -38,19 +40,9 @@ import getInstance from "@/sdk/Instance.js";
 
 const fileInput = ref(null)
 const fileList = reactive(new Set())
-const props = defineProps(["path"])
+const open = ref(true)
 const dirPath = ref("")
 const instance = getInstance()
-
-defineExpose({
-  fileList,
-  clearFilesList
-})
-
-function clearFilesList() {
-  console.log(props.path)
-  fileList.clear()
-}
 
 function checkUpload(file) {
   for (let [_, value] of file.children) {
@@ -79,9 +71,27 @@ function resumeUpload(entry) {
   })
 }
 
+function isUploading() {
+  for (let file of fileList) {
+    if ((file.currentChunk !== file.totalChunks) && !file.isPaused) {
+      return true
+    }
+  }
+  return false
+}
+
 function deleteFile(file) {
   // todo 发送请求根据md5删除
   fileList.delete(file)
+}
+
+function handleCancel() {
+  if (isUploading()) {
+    message.info("上传中，请暂停或等待上传完成...")
+    open.value = true
+    return
+  }
+  open.value = false
 }
 
 //点击上传
@@ -110,7 +120,7 @@ function handleFileChange(event) {
       isPaused: false,
     }
     fileList.add(entryInfo)
-    uploadFile.upload(files[i].name, props.path)
+    uploadFile.upload(deletePrefixSlash(files[i].name), dirPath.value)
   }
 }
 
@@ -160,7 +170,7 @@ async function drop(e) {
       }
       if (entry.isDirectory) {
         //todo
-        await instance.createDir(deletePrefixSlash(props.path + entry.fullPath))
+        await instance.createDir(deletePrefixSlash(entry.fullPath))
         await readDirectory(entry, entryInfo);
       } else {
         await readFile(entry, entryInfo);
@@ -168,7 +178,7 @@ async function drop(e) {
       entryInfo.size = Array.from(entryInfo.children.values())
           .reduce((totalSize, child) => totalSize + child.file.size, 0);
       for (const [key, value] of entryInfo.children) {
-        value.upload(deletePrefixSlash(key), props.path);
+        value.upload(deletePrefixSlash(key), dirPath.value);
       }
       fileList.add(entryInfo)
     }
@@ -181,7 +191,7 @@ async function readDirectory(directoryEntry, entryInfo) {
     reader.readEntries((entries) => {
       const promises = entries.map((entry) => {
         if (entry.isDirectory) {
-          instance.createDir(deletePrefixSlash(props.path + entry.fullPath))
+          instance.createDir(deletePrefixSlash(entry.fullPath))
           return readDirectory(entry, entryInfo);
         } else if (entry.isFile) {
           return readFile(entry, entryInfo);
