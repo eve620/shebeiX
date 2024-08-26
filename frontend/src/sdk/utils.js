@@ -72,3 +72,24 @@ export function pathJoin(dir, file) {
     return dir + "/" + file
 }
 
+export function validateDirOrFileName(name) {
+    // 检查名字是否为空
+    if (!name) {
+        return false;
+    }
+
+    // 检查名字是否包含空格
+    if (/\s/.test(name)) {
+        return false;
+    }
+
+    // 检查名字是否包含特殊字符
+    // 这里我们定义了一些常见的特殊字符
+    const specialChars = /[`~!@#$%^&*()_|+\-=?;:'",.<>\{\}\[\]\\\/]/;
+    if (specialChars.test(name)) {
+        return false;
+    }
+
+    // 如果没有问题，则返回 true
+    return true;
+}

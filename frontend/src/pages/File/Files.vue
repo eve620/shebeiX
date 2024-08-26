@@ -20,10 +20,10 @@
       </tr>
       </thead>
       <tbody>
-      <tr v-for="(item, index) in props.data" :key="index"
+      <tr v-for="(item) in props.data" :key="item"
           :class="{ 'clickable': item.fileType === 'dir' }">
         <td>
-          <a-checkbox @click="() => select(item)"/>
+          <a-checkbox @click="() => emits('select', item)"/>
         </td>
         <td @click="emits('onClick', item)">
           <FolderOutlined v-if="item.fileType === 'dir'" style="margin-right: 4px;color: #888888"/>
@@ -47,7 +47,7 @@
 </template>
 
 <script setup>
-import {reactive, ref} from "vue";
+import {reactive, ref, watch} from "vue";
 import {formatBytes, formatDate, getFileType} from "@/sdk/utils.js";
 import {FolderOutlined, FileOutlined} from '@ant-design/icons-vue';
 
@@ -57,24 +57,11 @@ const props = defineProps({
     default: () => []
   }
 })
-const emits = defineEmits(['onChange', 'onClick'])
-const active = ref(new Set())
+const emits = defineEmits(['onChange', 'onClick', 'select'])
+const selected = ref(new Set())
 const data = reactive(props.data)
-const currentSelect = ref()
-
-const select = (item) => {
-  currentSelect.value = item
-  // 选中和反选择
-  if (active.value.has(item)) {
-    active.value.delete(item)
-  } else {
-    active.value.add(item)
-  }
-  // TODO: 使用更加节约内存的方法
-  emits("onChange", active.value)
-}
-defineExpose({
-  active
+watch(selected.value, () => {
+  emits("onChange", selected.value)
 })
 </script>
 

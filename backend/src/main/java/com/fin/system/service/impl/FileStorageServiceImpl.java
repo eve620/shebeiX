@@ -57,12 +57,12 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
         if (dto.getFile() == null) {
             throw new RuntimeException("文件不能为空");
         }
-        String fullFileName = baseFileSavePath + File.separator + dto.getIdentifier();
-        Path directoryPath = Paths.get(fullFileName).getParent();
+        Path rootPath = Paths.get(baseFileSavePath);
+        String fullFileName = rootPath.toAbsolutePath().resolve(dto.getIdentifier()).toString();
         // 检查目录是否存在，不存在则创建
-        if (!directoryPath.toFile().exists()) {
+        if (!rootPath.toFile().exists()) {
             try {
-                Files.createDirectories(directoryPath); // 注意：这会递归创建所有必需的父目录
+                Files.createDirectories(rootPath); // 注意：这会递归创建所有必需的父目录
             } catch (IOException e) {
                 // 处理创建目录失败的情况，例如记录日志或抛出自定义异常
                 throw new RuntimeException("创建文件保存目录失败：" + e.getMessage());
@@ -134,13 +134,13 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
         FileChunk chunk = BeanUtil.copyProperties(dto, FileChunk.class);
         chunk.setFileName(dto.getFilename());
         chunk.setTotalChunk(dto.getTotalChunks());
+        System.out.println(chunk);
         fileChunkService.save(chunk);
         // 如果所有快都上传完成，那么在文件记录表中存储一份数据
         // todo 这里最好每次上传完成都存一下缓存，从缓存中查看是否所有块上传完成，这里偷懒了
         if (dto.getChunkNumber().equals(dto.getTotalChunks())) {
             String name = dto.getFilename();
             MultipartFile file = dto.getFile();
-            System.out.println(file);
             FileStorage fileStorage = new FileStorage();
             fileStorage.setRealName(file.getOriginalFilename());
             fileStorage.setFileName(fileName);

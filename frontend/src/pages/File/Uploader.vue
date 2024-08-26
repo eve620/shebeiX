@@ -48,7 +48,6 @@ defineExpose({
 })
 
 function clearFilesList() {
-  console.log(props.path)
   fileList.clear()
 }
 

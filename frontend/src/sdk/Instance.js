@@ -271,10 +271,7 @@ class Instance {
         return $axios({
             url: `/fileStorage/check`,
             method: 'get',
-            params: {
-                md5,
-                filePath
-            }
+            params: {md5, filePath}
         })
     }
 
@@ -297,11 +294,19 @@ class Instance {
         })
     }
 
-    deleteFileOrDir(filePath) {
+    deleteFileOrDir(deleteId) {
         return $axios({
-            url: "",
+            url: "/fileStorage/delete",
             method: "delete",
-            params: {filePath}
+            params: {deleteId}
+        })
+    }
+
+    renameFileOrDir(renameId, newName) {
+        return $axios({
+            url: "/fileStorage/rename",
+            method: "put",
+            params: {renameId, newName}
         })
     }
 }

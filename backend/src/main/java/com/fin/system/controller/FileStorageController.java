@@ -3,6 +3,7 @@ package com.fin.system.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
+import com.alibaba.excel.util.FieldUtils;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fin.system.commen.R;
 import com.fin.system.dto.FileChunkDto;
@@ -19,9 +20,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -57,45 +58,6 @@ public class FileStorageController {
                 .collect(Collectors.toList());
 
         return R.success(matchedFiles);
-    }
-
-
-    public static boolean matchStringWithoutSlash(String input, String patternStr) {
-        if (!Objects.equals(patternStr, "")) {
-            patternStr += "/";
-        }
-        // 使用正则表达式构造匹配模式
-        String regex = patternStr + "(?!.*[/]).*";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(input);
-
-        // 返回匹配结果
-        return matcher.matches();
-    }
-
-    /**
-     * 本接口为校验接口，即上传前，先根据本接口查询一下 服务器是否存在该文件
-     *
-     * @param dto 入参
-     * @return vo
-     */
-    @GetMapping("/upload")
-    public R<CheckResultVo> AcheckUpload(FileChunkDto dto) {
-        String filePath = dto.getRelativePath();
-        if (!Objects.equals(dto.getDirPath(), "")) {
-            filePath = dto.getDirPath() + "/" + dto.getRelativePath();
-        }
-        LambdaQueryWrapper<FileStorage> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(FileStorage::getIdentifier, dto.getIdentifier());
-        FileStorage storage = fileStorageService.getOne(queryWrapper);
-        if (storage != null) {
-            if (!Objects.equals(storage.getFilePath(), filePath)) {
-                storage.setFilePath(filePath);
-                storage.setId(null);
-                fileStorageService.save(storage);
-            }
-        }
-        return R.success(fileChunkService.check(dto));
     }
 
     /**
@@ -191,6 +153,82 @@ public class FileStorageController {
         return R.success("文件夹创建成功");
     }
 
+    @DeleteMapping(value = "/delete")
+    public R<String> deleteItem(HttpServletRequest request, String deleteId) {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("userInfo") == null) {
+            return R.error("用户未登录");
+        }
+        LambdaQueryWrapper<FileStorage> storageQueryWrapper = new LambdaQueryWrapper<>();
+        storageQueryWrapper.eq(FileStorage::getId, deleteId);
+        FileStorage storage = fileStorageService.getOne(storageQueryWrapper);
+        //删除的是文件夹
+        if (storage.getIdentifier() == null) {
+            String filePath = storage.getFilePath();
+            LambdaQueryWrapper<FileStorage> sonQueryWrapper = new LambdaQueryWrapper<>();
+            sonQueryWrapper.likeRight(FileStorage::getFilePath, filePath + "/");
+            List<FileStorage> sonList = fileStorageService.list(sonQueryWrapper);
+            if (!sonList.isEmpty()) {
+                //递归调用逻辑删除
+                for (FileStorage item : sonList) {
+                    if (item.getIdentifier() == null) {
+                        fileStorageService.removeById(item.getId());
+                    } else {
+                        deleteFile(item);
+                    }
+                }
+            }
+        } else //删除的是不同路径相同文件
+        {
+            deleteFile(storage);
+        }
+        fileStorageService.remove(storageQueryWrapper);
+        return R.success("删除成功");
+    }
+
+    @PutMapping("/rename")
+    public R<String> rename(String renameId, String newName) {
+        LambdaQueryWrapper<FileStorage> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(FileStorage::getId, renameId);
+        FileStorage storage = fileStorageService.getOne(queryWrapper);
+        Path filePath = Paths.get(storage.getFilePath());
+        if (Objects.equals(storage.getFileType(), "dir")) {
+            storage.setRealName(newName);
+            String oldParentPath = storage.getFilePath();
+            if (filePath.getParent() != null) {
+                storage.setFilePath(filePath.getParent() + "/" + newName);
+                fileStorageService.updateById(storage);
+            } else {
+                storage.setFilePath(newName);
+                fileStorageService.updateById(storage);
+            }
+            String newParentPath = storage.getFilePath();
+            LambdaQueryWrapper<FileStorage> sonQueryWrapper = new LambdaQueryWrapper<>();
+            sonQueryWrapper.likeRight(FileStorage::getFilePath, oldParentPath);
+            List<FileStorage> list = fileStorageService.list(sonQueryWrapper);
+            for (FileStorage sonFileStorage : list) {
+                sonFileStorage.setFilePath(sonFileStorage.getFilePath().replaceFirst(oldParentPath, newParentPath));
+                fileStorageService.updateById(sonFileStorage);
+            }
+        } else {
+            String suffix = FileUtil.getSuffix(storage.getRealName());
+            if (Objects.equals(suffix, "")) {
+                storage.setRealName(newName);
+            } else {
+                storage.setRealName(newName + "." + suffix);
+            }
+            if (filePath.getParent() != null) {
+                System.out.println(filePath.getParent());
+                storage.setFilePath(filePath.getParent().toString().replace("\\", "/") + "/" + storage.getRealName());
+                fileStorageService.updateById(storage);
+            } else {
+                storage.setFilePath(storage.getRealName());
+                fileStorageService.updateById(storage);
+            }
+        }
+        return R.success("修改成功");
+    }
+
     /**
      * 下载接口，这里只做了普通的下载
      *
@@ -202,6 +240,42 @@ public class FileStorageController {
     @GetMapping(value = "/download/{identifier}")
     public void downloadByIdentifier(HttpServletRequest request, HttpServletResponse response, @PathVariable("identifier") String identifier) throws IOException {
         fileStorageService.downloadByIdentifier(identifier, request, response);
+
+    }
+
+    private void deleteFile(FileStorage item) {
+        try {
+            String identifier = item.getIdentifier();
+            LambdaQueryWrapper<FileStorage> uniqueQueryWrapper = new LambdaQueryWrapper<>();
+            uniqueQueryWrapper.eq(FileStorage::getIdentifier, identifier);
+            List<FileStorage> list = fileStorageService.list(uniqueQueryWrapper);
+            if (list.size() == 1) {
+                String fileName = item.getFileName();
+                Path file = Paths.get(fileName);
+                if (Files.exists(file)) {
+                    Files.delete(file);
+                }
+                LambdaQueryWrapper<FileChunk> chunkQueryWrapper = new LambdaQueryWrapper<>();
+                chunkQueryWrapper.eq(FileChunk::getIdentifier, identifier);
+                fileChunkService.remove(chunkQueryWrapper);
+            }
+            fileStorageService.removeById(item.getId());
+        } catch (Exception e) {
+            throw new RuntimeException("删除失败");
+        }
+    }
+
+    private boolean matchStringWithoutSlash(String input, String patternStr) {
+        if (!Objects.equals(patternStr, "")) {
+            patternStr += "/";
+        }
+        // 使用正则表达式构造匹配模式
+        String regex = patternStr + "(?!.*[/]).*";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(input);
+
+        // 返回匹配结果
+        return matcher.matches();
     }
 }
 

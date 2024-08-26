@@ -26,6 +26,6 @@ mybatis-plus:
 #    sql: off
 #    web: off
 file:
-  path: D:\tmp\file
+  path: storage
   # 20 * 1024 * 1024
   chunk-size: 20971520

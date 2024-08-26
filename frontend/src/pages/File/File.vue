@@ -19,14 +19,14 @@
         <Path/>
         <div class="flex-spacer"></div>
         <div class="button-groups">
-          <Button v-show="isDeleteShow" text="删除" @click="isDelete = true" icon="trash"/>
-          <Button v-show="isRenameShow" text="重命名" @click="isRenameActive=true" icon="modify"/>
-          <Button v-show="isDownloadShow" text="下载" @click="download" icon="download"/>
-          <Button v-show="isUploadShow" text="上传" @click="isUpload=true" icon="upload"/>
-          <Button v-show="isCreateDirShow" text="新建" @click="isNewDirOpen=true" icon="create"/>
+          <Button v-show="selected&&selected.size>0" text="删除" @click="isDelete = true" icon="trash"/>
+          <Button v-show="selected&&selected.size===1" text="重命名" @click="isRenameActive=true" icon="modify"/>
+          <Button v-show="selected&&selected.size>0" text="下载" @click="download" icon="download"/>
+          <Button text="上传" @click="isUpload=true" icon="upload"/>
+          <Button text="新建" @click="isNewDirOpen=true" icon="create"/>
         </div>
       </div>
-      <Files ref="filesRef" @onChange="fileSelectedChange" @onClick="downloadOrOpen" :data="file"/>
+      <Files ref="filesRef" @onClick="downloadOrOpen" @select="select" :data="file"/>
     </div>
   </div>
 </template>
@@ -34,13 +34,14 @@
 <script setup>
 import Files from "@/pages/File/Files.vue";
 import Button from "@/components/Button/Button.vue";
-import {computed, onBeforeMount, ref, watch} from "vue";
+import {computed, onBeforeMount, reactive, ref, watch} from "vue";
 import Path from "@/components/Path/Path.vue";
 import {useRoute} from "vue-router";
 import getInstance from "@/sdk/Instance.js";
 import router from "@/router.js";
 import Uploader from "@/pages/File/Uploader.vue";
 import {message} from "ant-design-vue";
+import {validateDirOrFileName} from "@/sdk/utils.js";
 
 const route = useRoute()
 const file = ref([])
@@ -51,25 +52,68 @@ const isUpload = ref(false)
 const isNewDirOpen = ref(false)
 const isDelete = ref(false)
 const isRenameActive = ref(false)
-const isRenameShow = ref(false)
-const isDownloadShow = ref(false)
-const isDeleteShow = ref(false)
-const isUploadShow = ref(false)
-const isCreateDirShow = ref(false)
+const selected = ref(new Set())
 const instance = getInstance()
 const path = computed(() => {
   const decodedPath = decodeURIComponent(route.path);
   if (decodedPath === '/home/file' || decodedPath === '/home/file/') return '';
   return decodedPath.replace('/home/file/', '').replace(/\/+$/, '');
 });
+watch(path, () => {
+  selected.value.clear()
+  refreshDir()
+})
 
-function rename() {
-  message.info(newName.value)
-  isRenameActive.value = false
+function select(item) {
+  // 选中和反选择
+  if (selected.value.has(item)) {
+    selected.value.delete(item)
+  } else {
+    selected.value.add(item)
+  }
+  console.log(selected.value)
+  // TODO: 使用更加节约内存的方法
 }
 
-function deleteFileOrDir() {
-  message.info("删除成功")
+function rename() {
+  if (validateDirOrFileName(newName.value)) {
+    if (selected.value.size === 1) {
+      selected.value.forEach((item) => {
+        console.log(item.id)
+        console.log(newName.value)
+        instance.renameFileOrDir(item.id, newName.value).then(res => {
+          if (res.data.code === 1) {
+            message.success("修改成功")
+            newName.value = ""
+            selected.value.clear()
+            refreshDir()
+          } else {
+            message.error("修改失败")
+          }
+        })
+      })
+      isRenameActive.value = false
+    }
+  } else {
+    message.warn("文件名不合法")
+  }
+}
+
+async function deleteFileOrDir() {
+  if (selected.value) {
+    const deletePromise = []
+    for (let item of selected.value) {
+      deletePromise.push(instance.deleteFileOrDir(item.id))
+    }
+    try {
+      const res = await Promise.all(deletePromise); // 使用 `await` 等待所有的删除操作完成
+      message.success("删除成功")
+      selected.value.clear()
+      refreshDir()
+    } catch (err) {
+      message.error("删除失败")
+    }
+  }
   isDelete.value = false
 }
 
@@ -89,8 +133,8 @@ function handleCancel() {
 }
 
 function download() {
-  if (filesRef.value) {
-    filesRef.value.active.forEach((item) => {
+  if (selected.value) {
+    selected.value.forEach((item) => {
       if (item.identifier) {
         downloadFile(item.identifier)
       }
@@ -113,16 +157,18 @@ function downloadOrOpen(file) {
 }
 
 async function onCreateDirOk() {
-  const dirName = getInputValue()
-  if (!isValidFilename(dirName)) {
-    Pop({message: "文件夹名称不规范"})
-    return
+  if (newName.value && validateDirOrFileName(newName.value)) {
+    instance.createDir(path.value ? path.value + "/" + newName.value.trim() : newName.value.trim()).then(res => {
+      if (res.data.code === 1) {
+        message.success("创建成功")
+        refreshDir()
+      } else message.error("创建失败")
+      newName.value = ""
+      isNewDirOpen.value = false
+    })
+  } else {
+    message.warn("文件夹不合法")
   }
-  instance.createDir(pathJoin(path, dirName)).then(() => {
-    newName.current.reset()
-    refreshDir()
-  }).catch(errHandler)
-  setIsNewDirOpen(false)
 }
 
 function refreshDir() {
@@ -135,37 +181,6 @@ function refreshDir() {
 
 onBeforeMount(() => {
   refreshDir()
-})
-watch(path, () => {
-  if (route.path.startsWith("/home/file")) {
-    refreshDir()
-  }
-})
-
-function fileSelectedChange(selected) {
-  isDownloadShow.value = selected && selected.size > 0
-  instance.whoami().then(res => {
-    if (!res) {
-      isUploadShow.value = false
-      isCreateDirShow.value = false
-      isDeleteShow.value = false
-      isRenameShow.value = false
-      return
-    }
-    isRenameShow.value = selected && selected.size === 1
-    isDeleteShow.value = selected && selected.size > 0
-    isUploadShow.value = true
-    isCreateDirShow.value = true
-  })
-}
-
-onBeforeMount(() => {
-  instance.whoami().then(res => {
-    if (res.data.data.roleId) {
-      isUploadShow.value = true
-      isCreateDirShow.value = true
-    }
-  })
 })
 </script>
 
