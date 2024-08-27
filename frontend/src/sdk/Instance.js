@@ -1,10 +1,12 @@
 //单例模式
 import axios from 'axios';
 
+export const baseURL = 'http://localhost:9000'
+
 const $axios = axios.create({
     // baseURL: '/api', // 替换为你的 API 地址
     // baseURL: '/',
-    baseURL: 'http://localhost:9000',
+    baseURL,
     withCredentials: true
 });
 

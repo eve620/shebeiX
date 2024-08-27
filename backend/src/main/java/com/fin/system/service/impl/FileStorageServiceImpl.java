@@ -89,8 +89,8 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
         FileStorage file = this.getOne(new LambdaQueryWrapper<FileStorage>()
                 .eq(FileStorage::getIdentifier, identifier));
         if (BeanUtil.isNotEmpty(file)) {
-            File toFile = new File(baseFileSavePath + File.separator + file.getRealName());
-            BulkFileUtil.downloadFile(request, response, toFile);
+            File toFile = new File(baseFileSavePath + File.separator + file.getIdentifier());
+            BulkFileUtil.downloadFile(request, response, toFile, file.getRealName());
         } else {
             throw new RuntimeException("文件不存在");
         }

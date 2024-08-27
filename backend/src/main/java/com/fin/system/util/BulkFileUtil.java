@@ -29,12 +29,14 @@ public class BulkFileUtil {
      * @param file
      * @throws UnsupportedEncodingException
      */
-    public static void downloadFile(HttpServletRequest request, HttpServletResponse response, File file) throws UnsupportedEncodingException {
+    public static void downloadFile(HttpServletRequest request, HttpServletResponse response, File file, String filename) throws UnsupportedEncodingException {
+        System.out.println(filename);
         response.setCharacterEncoding(request.getCharacterEncoding());
         response.setContentType("application/octet-stream");
         FileInputStream fis = null;
-
-        String filename = filenameEncoding(file.getName(), request);
+        if (filename == null) {
+            filename = filenameEncoding(file.getName(), request);
+        }
         try {
             fis = new FileInputStream(file);
             response.setHeader("Content-Disposition", String.format("attachment;filename=%s", filename));

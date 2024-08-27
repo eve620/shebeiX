@@ -37,7 +37,7 @@ import Button from "@/components/Button/Button.vue";
 import {computed, onBeforeMount, reactive, ref, watch} from "vue";
 import Path from "@/components/Path/Path.vue";
 import {useRoute} from "vue-router";
-import getInstance from "@/sdk/Instance.js";
+import getInstance, {baseURL} from "@/sdk/Instance.js";
 import router from "@/router.js";
 import Uploader from "@/pages/File/Uploader.vue";
 import {message} from "ant-design-vue";
@@ -134,18 +134,20 @@ function handleCancel() {
 
 function download() {
   if (selected.value) {
-    selected.value.forEach((item) => {
-      if (item.identifier) {
-        downloadFile(item.identifier)
-      }
-    })
+    if (selected.value.size === 1 && selected.value.values().next().value.type !== "dir") {
+      //处理下载单独文件逻辑
+      window.location.href = baseURL + "/fileStorage/download/" + selected.value.values().next().value.identifier;
+    } else {
+      //处理下载多个文件压缩包逻辑
+      const downloadIds = []
+      selected.value.forEach(item => downloadIds.push(item.id))
+      // 排除所有文件夹
+      const query = new URLSearchParams();
+      downloadIds.forEach(id => query.append("id", id))
+      window.open(baseURL + "/fileStorage/downloadZip?" + query);
+      // window.location.href = baseURL + "/fileStorage/downloadZip?" + query
+    }
   }
-}
-
-// 点击下载
-function downloadFile(identifier, id) {
-  console.log("file:>> ", file);
-  window.location.href = `http://localhost:9000/fileStorage/download/${identifier}`;
 }
 
 function downloadOrOpen(file) {

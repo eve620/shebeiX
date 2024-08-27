@@ -237,10 +237,15 @@ public class FileStorageController {
      * @param identifier md5
      * @throws IOException 异常
      */
-    @GetMapping(value = "/download/{identifier}")
+    @GetMapping("/download/{identifier}")
     public void downloadByIdentifier(HttpServletRequest request, HttpServletResponse response, @PathVariable("identifier") String identifier) throws IOException {
         fileStorageService.downloadByIdentifier(identifier, request, response);
+    }
 
+    @GetMapping("/downloadZip")
+    public void downloadZip(HttpServletRequest request, HttpServletResponse response, @RequestParam(name = "id") List<String> ids) throws IOException {
+        System.out.println(ids);
+//        fileStorageService.downloadByIdentifier(identifier, request, response);
     }
 
     private void deleteFile(FileStorage item) {
