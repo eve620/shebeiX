@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -232,19 +233,21 @@ public class FileStorageController {
     /**
      * 下载接口，这里只做了普通的下载
      *
-     * @param request    req
-     * @param response   res
-     * @param identifier md5
+     * @param request  req
+     * @param response res
+     * @param id       md5
      * @throws IOException 异常
      */
-    @GetMapping("/download/{identifier}")
-    public void downloadByIdentifier(HttpServletRequest request, HttpServletResponse response, @PathVariable("identifier") String identifier) throws IOException {
-        fileStorageService.downloadByIdentifier(identifier, request, response);
+    @GetMapping("/download")
+    public void downloadByIdentifier(HttpServletRequest request, HttpServletResponse response, String id) throws IOException {
+        fileStorageService.downloadByIdentifier(id, request, response);
     }
 
     @GetMapping("/downloadZip")
     public void downloadZip(HttpServletRequest request, HttpServletResponse response, @RequestParam(name = "id") List<String> ids) throws IOException {
         System.out.println(ids);
+        List<FileStorage> storages = fileStorageService.listByIds(ids);
+        System.out.println(storages);
 //        fileStorageService.downloadByIdentifier(identifier, request, response);
     }
 

@@ -134,14 +134,14 @@ function handleCancel() {
 
 function download() {
   if (selected.value) {
-    if (selected.value.size === 1 && selected.value.values().next().value.type !== "dir") {
+    if (selected.value.size === 1 && selected.value.values().next().value.fileType !== "dir") {
       //处理下载单独文件逻辑
-      window.location.href = baseURL + "/fileStorage/download/" + selected.value.values().next().value.identifier;
+      window.location.href = baseURL + "/fileStorage/download?id=" + selected.value.values().next().value.id;
     } else {
       //处理下载多个文件压缩包逻辑
       const downloadIds = []
       selected.value.forEach(item => downloadIds.push(item.id))
-      // 排除所有文件夹
+      // // 排除所有文件夹
       const query = new URLSearchParams();
       downloadIds.forEach(id => query.append("id", id))
       window.open(baseURL + "/fileStorage/downloadZip?" + query);

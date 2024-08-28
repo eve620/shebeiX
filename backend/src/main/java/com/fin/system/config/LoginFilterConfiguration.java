@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class LoginFilterConfiguration {
@@ -14,7 +15,7 @@ public class LoginFilterConfiguration {
     public RegistrationBean myFilter(){
         LoginFilter loginFilter = new LoginFilter();
         FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean(loginFilter);
-        filterRegistrationBean.setUrlPatterns(Arrays.asList("/*"));
+        filterRegistrationBean.setUrlPatterns(List.of("/*"));
         return filterRegistrationBean;
     }
 }

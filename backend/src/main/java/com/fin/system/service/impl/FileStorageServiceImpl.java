@@ -85,9 +85,9 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
 
     @SneakyThrows
     @Override
-    public void downloadByIdentifier(String identifier, HttpServletRequest request, HttpServletResponse response) {
+    public void downloadByIdentifier(String id, HttpServletRequest request, HttpServletResponse response) {
         FileStorage file = this.getOne(new LambdaQueryWrapper<FileStorage>()
-                .eq(FileStorage::getIdentifier, identifier));
+                .eq(FileStorage::getId, id));
         if (BeanUtil.isNotEmpty(file)) {
             File toFile = new File(baseFileSavePath + File.separator + file.getIdentifier());
             BulkFileUtil.downloadFile(request, response, toFile, file.getRealName());
