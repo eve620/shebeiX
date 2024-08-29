@@ -19,9 +19,9 @@
         <Path/>
         <div class="flex-spacer"></div>
         <div class="button-groups">
-          <Button v-show="selected&&selected.size>0" text="删除" @click="isDelete = true" icon="trash"/>
-          <Button v-show="selected&&selected.size===1" text="重命名" @click="isRenameActive=true" icon="modify"/>
-          <Button v-show="selected&&selected.size>0" text="下载" @click="download" icon="download"/>
+          <Button v-show="selected&&selected.length>0" text="删除" @click="isDelete = true" icon="trash"/>
+          <Button v-show="selected&&selected.length===1" text="重命名" @click="isRenameActive=true" icon="modify"/>
+          <Button v-show="selected&&selected.length>0" text="下载" @click="download" icon="download"/>
           <Button text="上传" @click="isUpload=true" icon="upload"/>
           <Button text="新建" @click="isNewDirOpen=true" icon="create"/>
         </div>
@@ -52,40 +52,34 @@ const isUpload = ref(false)
 const isNewDirOpen = ref(false)
 const isDelete = ref(false)
 const isRenameActive = ref(false)
-const selected = ref(new Set())
 const instance = getInstance()
 const path = computed(() => {
   const decodedPath = decodeURIComponent(route.path);
   if (decodedPath === '/home/file' || decodedPath === '/home/file/') return '';
   return decodedPath.replace('/home/file/', '').replace(/\/+$/, '');
 });
+const selected = computed(() => {
+  return file.value.filter(item => item.selected);
+});
 watch(path, () => {
-  selected.value.clear()
   refreshDir()
 })
 
-function select(item) {
-  // 选中和反选择
-  if (selected.value.has(item)) {
-    selected.value.delete(item)
-  } else {
-    selected.value.add(item)
+function select(id) {
+  const selectedItem = file.value.find(item => item.id === id);
+  if (selectedItem) {
+    selectedItem.selected = !selectedItem.selected; // 切换选中状态
   }
-  console.log(selected.value)
-  // TODO: 使用更加节约内存的方法
 }
 
 function rename() {
   if (validateDirOrFileName(newName.value)) {
-    if (selected.value.size === 1) {
+    if (selected.value.length === 1) {
       selected.value.forEach((item) => {
-        console.log(item.id)
-        console.log(newName.value)
         instance.renameFileOrDir(item.id, newName.value).then(res => {
           if (res.data.code === 1) {
             message.success("修改成功")
             newName.value = ""
-            selected.value.clear()
             refreshDir()
           } else {
             message.error("修改失败")
@@ -108,7 +102,6 @@ async function deleteFileOrDir() {
     try {
       const res = await Promise.all(deletePromise); // 使用 `await` 等待所有的删除操作完成
       message.success("删除成功")
-      selected.value.clear()
       refreshDir()
     } catch (err) {
       message.error("删除失败")
@@ -134,9 +127,9 @@ function handleCancel() {
 
 function download() {
   if (selected.value) {
-    if (selected.value.size === 1 && selected.value.values().next().value.fileType !== "dir") {
+    if (selected.value.length === 1 && selected.value[0].fileType !== "dir") {
       //处理下载单独文件逻辑
-      window.location.href = baseURL + "/fileStorage/download?id=" + selected.value.values().next().value.id;
+      window.location.href = baseURL + "/fileStorage/download?id=" + selected.value[0].id;
     } else {
       //处理下载多个文件压缩包逻辑
       const downloadIds = []
@@ -144,10 +137,11 @@ function download() {
       // // 排除所有文件夹
       const query = new URLSearchParams();
       downloadIds.forEach(id => query.append("id", id))
-      window.open(baseURL + "/fileStorage/downloadZip?" + query);
-      // window.location.href = baseURL + "/fileStorage/downloadZip?" + query
+      // window.open(baseURL + "/fileStorage/downloadZip?" + query);
+      window.location.href = baseURL + "/fileStorage/downloadZip?" + query
     }
   }
+  refreshDir()
 }
 
 function downloadOrOpen(file) {
@@ -176,7 +170,12 @@ async function onCreateDirOk() {
 function refreshDir() {
   instance.getFileList(path.value).then(res => {
     if (res) {
-      file.value = res.data.data
+      file.value = res.data.data.map(file => {
+        return {
+          ...file,      // 展开原始文件对象
+          selected: false // 添加 selected 属性并设置为 false
+        };
+      });
     }
   }).catch(error => console.error(error))
 }

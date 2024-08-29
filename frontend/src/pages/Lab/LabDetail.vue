@@ -141,11 +141,6 @@ const formData = ref({});
 const isAdmin = ref(false);
 const isAddShow = ref(false);
 const currentYear = computed(() => route.query.year)
-// todo:做到这了
-watch(currentYear, (newValue, oldValue) => {
-  console.log(labName)
-  console.log(newValue)
-});
 const addItem = async () => {
   formData.value = {
     labName: labName

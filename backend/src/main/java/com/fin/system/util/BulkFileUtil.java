@@ -30,7 +30,6 @@ public class BulkFileUtil {
      * @throws UnsupportedEncodingException
      */
     public static void downloadFile(HttpServletRequest request, HttpServletResponse response, File file, String filename) throws UnsupportedEncodingException {
-        System.out.println(filename);
         response.setCharacterEncoding(request.getCharacterEncoding());
         response.setContentType("application/octet-stream");
         FileInputStream fis = null;

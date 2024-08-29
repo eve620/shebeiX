@@ -5,6 +5,7 @@ import cn.hutool.core.io.FileUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fin.system.Mapper.FileStorageMapper;
+import com.fin.system.commen.R;
 import com.fin.system.dto.FileChunkDto;
 import com.fin.system.entity.FileChunk;
 import com.fin.system.entity.FileStorage;
@@ -26,7 +27,12 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * 文件存储表(FileStorage)表服务实现类
@@ -37,6 +43,7 @@ import java.util.Objects;
 @Service()
 @Slf4j
 public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileStorage> implements FileStorageService {
+
     /**
      * 默认分块大小
      */
@@ -50,6 +57,19 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
 
     @Resource
     FileChunkService fileChunkService;
+
+    @Override
+
+    public R<List<FileStorage>> getFileList(String parent) {
+        LambdaQueryWrapper<FileStorage> queryWrapper = new LambdaQueryWrapper<>();
+        List<FileStorage> fileInfoList = this.list(queryWrapper);
+        List<FileStorage> matchedFiles = fileInfoList.stream()
+                .filter(file -> matchStringWithoutSlash(file.getFilePath(), parent))
+                .sorted(Comparator.comparing((FileStorage f) -> f.getFileType().equals("dir") ? 0 : 1)
+                        .thenComparing(FileStorage::getFilePath))
+                .collect(Collectors.toList());
+        return R.success(matchedFiles);
+    }
 
     @Override
     public Boolean uploadFile(FileChunkDto dto) {
@@ -134,7 +154,6 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
         FileChunk chunk = BeanUtil.copyProperties(dto, FileChunk.class);
         chunk.setFileName(dto.getFilename());
         chunk.setTotalChunk(dto.getTotalChunks());
-        System.out.println(chunk);
         fileChunkService.save(chunk);
         // 如果所有快都上传完成，那么在文件记录表中存储一份数据
         // todo 这里最好每次上传完成都存一下缓存，从缓存中查看是否所有块上传完成，这里偷懒了
@@ -156,6 +175,19 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
             }
             this.save(fileStorage);
         }
+    }
+
+    private boolean matchStringWithoutSlash(String input, String patternStr) {
+        if (!Objects.equals(patternStr, "")) {
+            patternStr += "/";
+        }
+        // 使用正则表达式构造匹配模式
+        String regex = patternStr + "(?!.*[/]).*";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(input);
+
+        // 返回匹配结果
+        return matcher.matches();
     }
 }
 

@@ -23,7 +23,7 @@
       <tr v-for="(item) in props.data" :key="item"
           :class="{ 'clickable': item.fileType === 'dir' }">
         <td>
-          <a-checkbox @click="() => emits('select', item)"/>
+          <a-checkbox v-model:checked="item.selected" @click="() => emits('select', item.id)"/>
         </td>
         <td @click="emits('onClick', item)">
           <FolderOutlined v-if="item.fileType === 'dir'" style="margin-right: 4px;color: #888888"/>

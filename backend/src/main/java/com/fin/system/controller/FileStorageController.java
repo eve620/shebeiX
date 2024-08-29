@@ -13,23 +13,28 @@ import com.fin.system.entity.UserInfo;
 import com.fin.system.service.FileChunkService;
 import com.fin.system.service.FileStorageService;
 import com.fin.system.vo.CheckResultVo;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * 文件存储表(FileStorage)表控制层
@@ -47,18 +52,7 @@ public class FileStorageController {
 
     @GetMapping("/list")
     public R<List<FileStorage>> list(String parent) {
-        //构造条件构造器
-        LambdaQueryWrapper<FileStorage> queryWrapper = new LambdaQueryWrapper<>();
-        List<FileStorage> fileInfoList = fileStorageService.list(queryWrapper);
-        List<FileStorage> matchedFiles = fileInfoList.stream()
-                // 先进行你之前的匹配逻辑
-                .filter(file -> matchStringWithoutSlash(file.getFilePath(), parent))
-                // 然后进行排序，确保 fileType 为 "dir" 的排在前面
-                .sorted(Comparator.comparing((FileStorage f) -> f.getFileType().equals("dir") ? 0 : 1)
-                        .thenComparing(FileStorage::getFilePath)) // 可选：在此基础上按 filePath 排序以保持其他顺序一致性
-                .collect(Collectors.toList());
-
-        return R.success(matchedFiles);
+        return fileStorageService.getFileList(parent);
     }
 
     /**
@@ -219,7 +213,6 @@ public class FileStorageController {
                 storage.setRealName(newName + "." + suffix);
             }
             if (filePath.getParent() != null) {
-                System.out.println(filePath.getParent());
                 storage.setFilePath(filePath.getParent().toString().replace("\\", "/") + "/" + storage.getRealName());
                 fileStorageService.updateById(storage);
             } else {
@@ -243,12 +236,94 @@ public class FileStorageController {
         fileStorageService.downloadByIdentifier(id, request, response);
     }
 
+    @Data
+    private static class ZipEntity {
+        public ZipEntity(String path, List<FileStorage> data) {
+            this.path = path;
+            this.data = data;
+        }
+
+        private String path;
+        private List<FileStorage> data;
+    }
+
     @GetMapping("/downloadZip")
     public void downloadZip(HttpServletRequest request, HttpServletResponse response, @RequestParam(name = "id") List<String> ids) throws IOException {
-        System.out.println(ids);
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+        String fileName = "打包下载_" + dateFormat.format(new Date()) + ".zip";
+        response.setStatus(200);
+        response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
+
         List<FileStorage> storages = fileStorageService.listByIds(ids);
-        System.out.println(storages);
-//        fileStorageService.downloadByIdentifier(identifier, request, response);
+        List<ZipEntity> sonEntries = new ArrayList<>();
+
+        try (ZipOutputStream output = new ZipOutputStream(response.getOutputStream())) {
+            for (FileStorage item : storages) {
+                if (Objects.equals(item.getFileType(), "dir")) {
+                    // 如果是目录，查询该目录下的所有文件
+                    LambdaQueryWrapper<FileStorage> queryWrapper = new LambdaQueryWrapper<>();
+                    queryWrapper.likeRight(FileStorage::getFilePath, item.getFilePath());
+                    List<FileStorage> sonStorage = fileStorageService.list(queryWrapper);
+                    if (sonStorage.isEmpty()) {
+                        addDirToZip(item.getRealName(), output);
+                    } else {
+                        sonEntries.add(new ZipEntity(item.getFilePath(), sonStorage));
+                    }
+                } else {
+                    // 如果是文件，添加到 ZIP 压缩包
+                    addFileToZip(item, item.getRealName(), output);
+                }
+            }
+
+            // 将所有子文件添加到 ZIP 压缩包
+            for (ZipEntity sonEntry : sonEntries) {
+                String parentPath = sonEntry.getPath();
+                Path path = Paths.get(parentPath);
+                String parentName = path.getFileName().toString();
+                for (FileStorage sonStorage : sonEntry.getData()) {
+                    String relativePath = sonStorage.getFilePath().replaceFirst(parentPath, parentName);
+                    if (!Objects.equals(sonStorage.getFileType(), "dir")) {
+                        addFileToZip(sonStorage, relativePath, output);
+                    } else {
+                        addDirToZip(relativePath, output);
+                    }
+                }
+
+            }
+
+        } catch (IOException e) {
+            // 异常处理（记录日志，重新抛出等）
+            e.printStackTrace();
+        }
+    }
+
+    private void addFileToZip(FileStorage fileStorage, String relativePath, ZipOutputStream output) throws IOException {
+        var zipEntry = new ZipEntry(relativePath);
+        output.putNextEntry(zipEntry);
+
+        // 获取磁盘上存储的文件路径
+        String filePath = fileStorage.getFileName();
+
+        // 打开文件并将其内容写入 ZIP 输出流
+        try (FileInputStream fis = new FileInputStream(new File(filePath))) {
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = fis.read(buffer)) >= 0) {
+                output.write(buffer, 0, length);
+            }
+        }
+
+        output.closeEntry();
+    }
+
+    private void addDirToZip(String relativePath, ZipOutputStream output) throws IOException {
+        var zipEntry = new ZipEntry(relativePath + "/");
+        output.putNextEntry(zipEntry);
+        output.closeEntry();
     }
 
     private void deleteFile(FileStorage item) {
@@ -271,19 +346,6 @@ public class FileStorageController {
         } catch (Exception e) {
             throw new RuntimeException("删除失败");
         }
-    }
-
-    private boolean matchStringWithoutSlash(String input, String patternStr) {
-        if (!Objects.equals(patternStr, "")) {
-            patternStr += "/";
-        }
-        // 使用正则表达式构造匹配模式
-        String regex = patternStr + "(?!.*[/]).*";
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(input);
-
-        // 返回匹配结果
-        return matcher.matches();
     }
 }
 
