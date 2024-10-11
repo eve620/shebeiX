@@ -48,7 +48,21 @@ onBeforeMount(() => {
       user = res.data.data;
       isAdmin.value = user.roleId;
       isShow.value = 1;
-      if (isAdmin.value) {
+      if (isAdmin.value===1) {
+        menuList.push(
+            {
+              id: '3',
+              name: '教师管理',
+              icon: 'UserOutlined',
+              url: '/home/user'
+            },
+            {
+              id: '4',
+              name: '管理员管理',
+              icon: 'ToolOutlined',
+              url: '/home/manager'
+            },)
+      }else if(isAdmin.value===2){
         menuList.push(
             {
               id: '3',

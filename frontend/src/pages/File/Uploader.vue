@@ -5,7 +5,15 @@
       <p>点击上传文件或拖动文件夹到此区域上传</p>
     </div>
     <div class="file-list-container">
-      <div :key="index" v-for="(entry,index) of fileList" class="upload-file-item">
+      <div
+          :style="{
+         'background': `linear-gradient(to right,
+           rgba(76,172,175,0.2) ${computeProgress(entry) * 100 - 1}%,
+           rgba(76,172,175,0.2) ${computeProgress(entry) * 100}%,
+           #fff ${computeProgress(entry) * 100}%,
+           #fff ${computeProgress(entry) * 100 + 1}%)`
+       }"
+          :key="index" v-for="(entry,index) of fileList" class="upload-file-item">
         <span style="overflow: hidden;text-overflow: ellipsis; white-space: nowrap;padding-right: 10px">{{
             entry.name
           }}</span>
@@ -51,9 +59,19 @@ function clearFilesList() {
   fileList.clear()
 }
 
+function computeProgress(entry) {
+  let total = 0
+  let uploaded = 0
+  for (let [_, value] of entry.children) {
+    total += value.totalChunks
+    uploaded += value.currentChunk
+  }
+  return uploaded / total
+}
+
 function checkUpload(file) {
   for (let [_, value] of file.children) {
-    if (value && value.currentChunk !== value.totalChunks) {
+    if (value && !value.isCompleted) {
       return false
     }
   }

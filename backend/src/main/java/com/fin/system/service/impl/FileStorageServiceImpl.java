@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -105,12 +106,28 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
 
     @SneakyThrows
     @Override
-    public void downloadByIdentifier(String id, HttpServletRequest request, HttpServletResponse response) {
+    public void downloadByIdentifier(String id, HttpServletRequest request, HttpServletResponse response, String range) {
+        response.setHeader("Accept-Ranges", "bytes");
         FileStorage file = this.getOne(new LambdaQueryWrapper<FileStorage>()
                 .eq(FileStorage::getId, id));
+
         if (BeanUtil.isNotEmpty(file)) {
             File toFile = new File(baseFileSavePath + File.separator + file.getIdentifier());
-            BulkFileUtil.downloadFile(request, response, toFile, file.getRealName());
+            String fileName = new String(file.getRealName().getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1);
+
+            long fileLength = toFile.length();
+            Long start = null;
+            Long end = null;
+
+            // 判断是否带有 Range 头
+            if (range != null && range.startsWith("bytes=")) {
+                String[] ranges = range.substring("bytes=".length()).split("-");
+                start = Long.parseLong(ranges[0]);
+                end = ranges.length > 1 ? Long.parseLong(ranges[1]) : fileLength - 1;
+            }
+
+            // 调用简化后的 downloadFile 方法
+            BulkFileUtil.downloadFile(request, response, toFile, fileName, start, end);
         } else {
             throw new RuntimeException("文件不存在");
         }

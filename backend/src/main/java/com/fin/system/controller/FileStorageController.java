@@ -232,8 +232,9 @@ public class FileStorageController {
      * @throws IOException 异常
      */
     @GetMapping("/download")
-    public void downloadByIdentifier(HttpServletRequest request, HttpServletResponse response, String id) throws IOException {
-        fileStorageService.downloadByIdentifier(id, request, response);
+    public void downloadByIdentifier(HttpServletRequest request, HttpServletResponse response, String id,
+                                     @RequestHeader(value = "Range", required = false) String range) throws IOException {
+        fileStorageService.downloadByIdentifier(id, request, response,range);
     }
 
     @Data
@@ -257,6 +258,7 @@ public class FileStorageController {
         String fileName = "打包下载_" + dateFormat.format(new Date()) + ".zip";
         response.setStatus(200);
         response.setHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
+        response.setHeader("Accept-Ranges", "bytes");
 
         List<FileStorage> storages = fileStorageService.listByIds(ids);
         List<ZipEntity> sonEntries = new ArrayList<>();

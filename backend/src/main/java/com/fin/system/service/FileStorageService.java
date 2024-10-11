@@ -33,6 +33,6 @@ public interface FileStorageService extends IService<FileStorage> {
      * @param request
      * @param response
      */
-    void downloadByIdentifier(String identifier, HttpServletRequest request, HttpServletResponse response);
+    void downloadByIdentifier(String identifier, HttpServletRequest request, HttpServletResponse response,String range);
 }
 

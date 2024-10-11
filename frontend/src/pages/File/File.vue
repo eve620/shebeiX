@@ -99,6 +99,7 @@ async function deleteFileOrDir() {
     for (let item of selected.value) {
       deletePromise.push(instance.deleteFileOrDir(item.id))
     }
+    isDelete.value = false
     try {
       const res = await Promise.all(deletePromise); // 使用 `await` 等待所有的删除操作完成
       message.success("删除成功")
@@ -107,7 +108,6 @@ async function deleteFileOrDir() {
       message.error("删除失败")
     }
   }
-  isDelete.value = false
 }
 
 function handleCancel() {
@@ -129,7 +129,8 @@ function download() {
   if (selected.value) {
     if (selected.value.length === 1 && selected.value[0].fileType !== "dir") {
       //处理下载单独文件逻辑
-      window.location.href = baseURL + "/fileStorage/download?id=" + selected.value[0].id;
+      window.open(baseURL + "/fileStorage/download?id=" + selected.value[0].id);
+      // window.location.href = baseURL + "/fileStorage/download?id=" + selected.value[0].id;
     } else {
       //处理下载多个文件压缩包逻辑
       const downloadIds = []
@@ -137,8 +138,8 @@ function download() {
       // // 排除所有文件夹
       const query = new URLSearchParams();
       downloadIds.forEach(id => query.append("id", id))
-      // window.open(baseURL + "/fileStorage/downloadZip?" + query);
-      window.location.href = baseURL + "/fileStorage/downloadZip?" + query
+      window.open(baseURL + "/fileStorage/downloadZip?" + query);
+      // window.location.href = baseURL + "/fileStorage/downloadZip?" + query
     }
   }
   refreshDir()
