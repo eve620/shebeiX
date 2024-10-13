@@ -8,18 +8,27 @@ import com.fin.system.entity.User;
 import com.fin.system.entity.UserInfo;
 import com.fin.system.service.UserService;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang.StringUtils;
+import org.bouncycastle.util.encoders.Base64Encoder;
+import org.jasig.cas.client.authentication.AttributePrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Map;
 
 import static com.fin.system.commen.MD5Util.computeMD5Hash;
 
@@ -28,15 +37,59 @@ import static com.fin.system.commen.MD5Util.computeMD5Hash;
 public class UserController {
     @Autowired
     private UserService userService;
+    private final static String servletSessionCookieName = "JSESSIONID";
+    private final static String casLogoutUrl = "https://ids.xidian.edu.cn/authserver/";
+    private final static String casApplicationUrl = URLEncoder.encode("https://shebei.xidian.edu.cn/login", StandardCharsets.UTF_8);
+    private final static String casLogoutRedirectUrl = casLogoutUrl + "logout?service=" + casApplicationUrl;
+    public static String filenameEncoding(String filename, HttpServletRequest request) throws UnsupportedEncodingException {
+        // 获得请求头中的User-Agent
+        String agent = request.getHeader("User-Agent");
+        // 根据不同的客户端进行不同的编码
 
+        if (agent.contains("MSIE")) {
+            // IE浏览器
+            filename = URLEncoder.encode(filename, StandardCharsets.UTF_8);
+        }  else {
+            // 其它浏览器
+            filename = URLEncoder.encode(filename, StandardCharsets.UTF_8);
+        }
+        return filename;
+    }
     @GetMapping("/whoami")
-    public R<UserInfo> whoami(HttpServletRequest request) {
+    public R<UserInfo> whoami(HttpServletRequest request) throws UnsupportedEncodingException {
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userInfo") == null) {
+        if (session != null && session.getAttribute("userInfo") != null) {
+            return R.success((UserInfo) session.getAttribute("userInfo"));
+        }
+        String userId = request.getRemoteUser();
+        if (userId == null) {
             return R.error("用户未登录");
         }
-        UserInfo user = (UserInfo) session.getAttribute("userInfo");
-        return R.success(user);
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getUserAccount, userId);
+        User emp = userService.getOne(queryWrapper);
+        if (emp == null) {
+            Principal principal = request.getUserPrincipal();
+            if (principal instanceof AttributePrincipal aPrincipal) {
+                User user = new User();
+                Map<String, Object> map = aPrincipal.getAttributes();
+                String cn = new String(map.get("cn").toString().getBytes(Charset.forName("GBK")), StandardCharsets.UTF_8);
+                user.setUserAccount(userId);
+                user.setUserName(cn);
+                user.setRoleId(0);
+                user.setUserPassword(computeMD5Hash("123456"));
+                userService.save(user);
+                UserInfo userInfo = new UserInfo(user.getUserId(), user.getUserAccount(), user.getUserName(), user.getRoleId());
+                if (session != null) {
+                    session.setAttribute("userInfo", userInfo);
+                }
+                return R.success(userInfo);
+            }
+            return R.error("信息验证错误");
+        }
+        UserInfo userInfo = new UserInfo(emp.getUserId(), emp.getUserAccount(), emp.getUserName(), emp.getRoleId());
+        request.getSession().setAttribute("userInfo", userInfo);
+        return R.success(userInfo);
     }
 
     //登录
@@ -60,9 +113,28 @@ public class UserController {
     }
 
     @PostMapping("/logout")
-    public R<String> logout(HttpServletRequest request) {
-        request.getSession().invalidate();
-        return R.success("退出成功");
+    public void logout(HttpServletRequest request, HttpServletResponse response) throws
+            ServletException, IOException {
+//        request.getSession().invalidate();
+//        return R.success("退出成功");
+        var casLoaded = request.getRemoteUser() != null;
+        var session = request.getSession(false);
+        if (session != null) {
+            session.invalidate();
+            // 销毁cookie
+            destroySessionCookie(response);
+        }
+        // 如果需要重定向，进行重定向
+        if (casLoaded) {
+            response.sendRedirect(casLogoutRedirectUrl);
+        }
+    }
+
+    private void destroySessionCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(servletSessionCookieName, null);
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
     }
 
     @GetMapping("/page")

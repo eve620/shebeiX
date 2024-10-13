@@ -1,21 +1,31 @@
 <template>
   <div class="operation-bar">
     <div style="flex: 1">
-      <div style="display: inline-block;width: 50%;padding-right: 10px">
+      <div style="display: inline-block;width:30%;padding-right: 10px">
         <a-select
             v-model:value="itemSelected"
             mode="multiple"
-            style="min-width: 80%"
+            style="min-width: 95%"
             placeholder="请输入名称"
             :options="itemList"
             @change="onSearch"
         ></a-select>
       </div>
-      <div style="display: inline-block;width: 50%;padding-right: 10px">
+      <div v-show="isModelShow" style="display: inline-block;width:30%;padding-right: 10px">
+        <a-select
+            v-model:value="modelSelected"
+            mode="multiple"
+            style="min-width: 95%"
+            placeholder="请输入型号"
+            :options="modelList"
+            @change="onSearch"
+        ></a-select>
+      </div>
+      <div style="display: inline-block;width:20%;padding-right: 10px">
         <a-select
             v-model:value="userSelected"
             mode="multiple"
-            style="min-width: 80%"
+            style="min-width: 100%"
             placeholder="请输入姓名"
             :options="userList"
             @change="onSearch"
@@ -40,9 +50,10 @@ import {message} from "ant-design-vue";
 import getInstance from "@/sdk/Instance.js";
 
 const emit = defineEmits(['add', 'export', 'handleSearch', 'handleImport']);
-const props = defineProps(['addShow', 'itemList', 'userList']);
+const props = defineProps(['addShow', 'itemList', 'modelList', 'userList', 'isModelShow']);
 const searchInput = ref('');
 const itemSelected = ref([])
+const modelSelected = ref([])
 const userSelected = ref([])
 const uploadedFile = ref(null);
 const fileInputRef = ref(null);
@@ -67,7 +78,11 @@ const handleFileChange = (event) => {
   event.target.value = null;
 };
 const onSearch = () => {
-  emit('handleSearch', {itemSelected: itemSelected.value, userSelected: userSelected.value});
+  emit('handleSearch', {
+    itemSelected: itemSelected.value,
+    modelSelected: modelSelected.value,
+    userSelected: userSelected.value
+  });
 };
 const onAdd = () => {
   emit('add');

@@ -51,7 +51,8 @@
       </div>
       <span style="color:#707070;font-weight: bold">{{ labName }}</span>
     </div>
-    <OperationBar :addShow="isAdmin" :item-list="arr" :user-list="userArr" @add="addItem" @export="download"
+    <OperationBar :addShow="isAdmin" :itemList="itemArr" :modelList="modelArr" :isModelShow="true"
+                  :userList="userArr" @add="addItem" @export="download"
                   @handleSearch="handleSearch"/>
     <div class="loading" v-show="!isShow">
       <a-spin size="large"/>
@@ -108,10 +109,13 @@
              row-key="itemId"
              bordered>
       <template v-slot:bodyCell="{ column,record }">
-            <span v-if="column.dataIndex==='operation'">
+        <span v-if="column.dataIndex==='serial'">
+                  {{ dataSource.indexOf(record) + 1 }}
+        </span>
+        <span v-if="column.dataIndex==='operation'" style="white-space: nowrap;">
                   <a @click="onEdit(record)">编辑</a>
                   <Delete @delete="deleteItem" :tagetId="record.itemId" v-show="isAdmin"/>
-            </span>
+        </span>
       </template>
     </a-table>
   </div>
@@ -251,14 +255,13 @@ onBeforeMount(() => {
       isAdmin.value = user.roleId;
     }
   })
-  if (currentYear && labName) {
-    instance.getItemList(currentYear, labName).then(res => {
+  if (currentYear.value && labName) {
+    instance.getItemList(currentYear.value, labName).then(res => {
       dataSourceTemplate.value = res.data.data
       dataSource.value = res.data.data;
       isShow.value = true;
     })
   }
-
 })
 const download = () => {
   downloadExcel("/item", dataSource.value, labName + "资产详情表.xlsx")
@@ -266,12 +269,24 @@ const download = () => {
 const dataSource = ref([]);
 const dataSourceTemplate = ref([])
 const isShow = ref(false);
-const set = computed(() => {
+const itemSet = computed(() => {
   return new Set(dataSourceTemplate.value.map(item => (item.itemName)))
 })
-const arr = computed(() => {
+const itemArr = computed(() => {
   let array = []
-  set.value.forEach((item) => {
+  itemSet.value.forEach((item) => {
+    array.push({
+      value: item,
+    })
+  })
+  return array
+})
+const modelSet = computed(() => {
+  return new Set(dataSourceTemplate.value.map(item => (item.itemModel)))
+})
+const modelArr = computed(() => {
+  let array = []
+  modelSet.value.forEach((item) => {
     array.push({
       value: item,
     })
@@ -294,14 +309,21 @@ const handleSearch = (searchParams) => {
   isShow.value = false;
   dataSource.value = dataSourceTemplate.value.filter((item) => {
     const itemSelected = searchParams.itemSelected;
+    const modelSelected = searchParams.modelSelected;
     const userSelected = searchParams.userSelected;
     const itemMatch = itemSelected.length === 0 || itemSelected.some(keyword => item.itemName.includes(keyword));
+    const modelMatch = modelSelected.length === 0 || modelSelected.some(keyword => item.itemModel.includes(keyword));
     const userMatch = userSelected.length === 0 || userSelected.some(keyword => item.userName.includes(keyword));
-    return itemMatch && userMatch;
+    return itemMatch && modelMatch && userMatch;
   });
   isShow.value = true;
 };
 const columns = [
+  {
+    title: '序号',
+    dataIndex: 'serial', // 使用一个虚拟的键名，因为我们不直接从dataSource取序号
+    width: '6%', // 您可以按需调整宽度
+  },
   {
     title: '类型',
     dataIndex: 'itemType',

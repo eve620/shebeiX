@@ -111,10 +111,10 @@ const menuClick = (url) => {
   router.push(url)
 }
 const onCollapse = (collapsed, type) => {
-  console.log(collapsed, type);
+  // console.log(collapsed, type);
 };
 const onBreakpoint = broken => {
-  console.log(broken);
+  // console.log(broken);
 };
 const selectedKeys = ref(['1']); </script>
 <style scoped>

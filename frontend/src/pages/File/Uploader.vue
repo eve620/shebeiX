@@ -30,7 +30,7 @@
           <CheckOutlined v-if="checkUpload(entry)" style="font-size: 16px"/>
         </div>
       </div>
-      <button @click="check">测试上传</button>
+<!--      <button @click="()=>{console.log(fileList)}">测试上传</button>-->
       <input ref="fileInput" class="file" @change="handleFileChange" type="file" multiple/>
     </div>
   </div>
@@ -146,11 +146,6 @@ function formatBytes(byteLen) {
   }
   return Math.ceil(byteLen * 100) / 100 + " " + units[index];
 }
-
-function check() {
-  console.log(fileList)
-}
-
 async function drop(e) {
   for (let i = 0; i < e.dataTransfer.items.length; i++) {
     const item = e.dataTransfer.items[i];

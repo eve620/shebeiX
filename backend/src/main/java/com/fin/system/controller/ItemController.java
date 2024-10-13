@@ -1,6 +1,9 @@
 package com.fin.system.controller;
 
 import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.write.metadata.style.WriteCellStyle;
+import com.alibaba.excel.write.metadata.style.WriteFont;
+import com.alibaba.excel.write.style.HorizontalCellStyleStrategy;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fin.system.commen.R;
 import com.fin.system.entity.Item;
@@ -97,10 +100,20 @@ public class ItemController {
     //导出Excel
     @PostMapping("/download")
     public void download(HttpServletResponse response, @RequestBody List<Item> items) throws IOException {
+        // 头的策略
+        WriteCellStyle headWriteCellStyle = new WriteCellStyle();
+        WriteFont headWriteFont = new WriteFont();
+        headWriteFont.setBold(true);
+        headWriteCellStyle.setWriteFont(headWriteFont);
+        // 内容的策略
+        WriteCellStyle contentWriteCellStyle = new WriteCellStyle();
+        HorizontalCellStyleStrategy horizontalCellStyleStrategy =
+                new HorizontalCellStyleStrategy(headWriteCellStyle, contentWriteCellStyle);
+
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setCharacterEncoding("utf-8");
         try (OutputStream outputStream = response.getOutputStream()) {
-            EasyExcel.write(outputStream, Item.class).sheet("items").doWrite(items);
+            EasyExcel.write(outputStream, Item.class).useDefaultStyle(false).registerWriteHandler(horizontalCellStyleStrategy).sheet("items").doWrite(items);
             outputStream.flush();
         } catch (IOException e) {
             e.printStackTrace();

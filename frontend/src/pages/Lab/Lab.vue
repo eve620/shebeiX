@@ -5,14 +5,14 @@
       <a-form-item name="labName" label="地点" :rules="[{ required: true, message: '请输入地点' }]">
         <a-input v-model:value="formData.labName" placeholder="请输入地点"/>
       </a-form-item>
-      <a-form-item name="userName" label="管理人" :rules="[{ required: true, message: '请选择管理人' }]">
+      <a-form-item name="userName" label="实验室管理人" :rules="[{ required: true, message: '请选择管理人' }]">
         <a-select v-model:value="formData.userName" placeholder="请选择">
           <a-select-option v-for="item in userList" :value="item.userName"
                            @click="setAccount(item.userAccount)">{{ item.userName }}
           </a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item label="工资号">
+      <a-form-item label="管理人工资号">
         <a-input v-model:value="formData.userAccount" :disabled="true"/>
       </a-form-item>
     </a-form>
@@ -23,14 +23,14 @@
       <a-form-item label="地点">
         <a-input v-model:value="formData.labName" :disabled="true"/>
       </a-form-item>
-      <a-form-item label="管理人">
+      <a-form-item label="实验室管理人">
         <a-select v-model:value="formData.userName" placeholder="请选择">
           <a-select-option v-for="item in userList" :value="item.userName"
                            @click="setAccount(item.userAccount)">{{ item.userName }}
           </a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item label="工资号">
+      <a-form-item label="管理人工资号">
         <a-input v-model:value="formData.userAccount" :disabled="true"/>
       </a-form-item>
     </a-form>
@@ -239,12 +239,12 @@ const columns = [
     width: '15%',
   },
   {
-    title: '管理员名称',
+    title: '实验室管理人',
     dataIndex: 'userName',
     width: '15%',
   },
   {
-    title: '管理员工资号',
+    title: '管理人工资号',
     dataIndex: 'userAccount',
     width: '40%',
   },

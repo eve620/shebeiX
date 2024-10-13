@@ -1,5 +1,6 @@
 package com.fin.system.entity;
 
+import com.alibaba.excel.annotation.ExcelIgnore;
 import com.alibaba.excel.annotation.ExcelProperty;
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
@@ -33,16 +34,19 @@ public class Item implements Serializable {
     private String labName;
     @ExcelProperty("现状")
     private String itemStatus;
-    @ExcelProperty("备注")
+    //    @ExcelProperty("备注")
+    @ExcelIgnore
     private String itemNote;
-    //new
-    @ExcelProperty("采购人")
+    //    @ExcelProperty("采购人")
+    @ExcelIgnore
     private String itemPurchaser;
-    @ExcelProperty("税额")
+    //    @ExcelProperty("税额")
+    @ExcelIgnore
     private String itemTax;
     @ExcelProperty("领用单位")
     private String itemUnit;
-    @ExcelProperty("出厂号")
+    //    @ExcelProperty("出厂号")
+    @ExcelIgnore
     private String itemSerial;
     @ExcelProperty("入库日期")
     private String itemWarehousing;

@@ -1,62 +1,108 @@
 @use "../../scss/variable";
-.container{
-  overflow:auto;
+
+.container {
+  overflow: auto;
   height: 100vh;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   background-color: variable.$theme-red;
-  .login-container{
+
+  .container-header {
+    font-weight: bold;
+    color: #f5f5f5;
+    font-size: 30px;
+    padding-bottom: 20px;
+  }
+
+  .login-container {
     display: flex;
     height: 500px;
     background-color: variable.$theme-light;
     box-shadow: 0 2px 50px -1px rgba(0, 0, 0, 0.3);
     border-radius: 8px;
-    .login-display{
+
+    .login-display {
       border-radius: 8px 0 0 8px;
       width: 600px;
       background-size: cover;
       background-image: url(../../../public/logo.png);
     }
-    .login-form{
+
+    .login-form {
       min-width: 350px;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       padding: 40px 30px;
-      > img{
+
+      > img {
         width: 260px;
-        padding-bottom: 50px;
+        padding-bottom: 30px;
       }
-      .iconfont{
+
+      .iconfont {
         font-size: 20px;
         color: #d8d8d8;
         line-height: 56px;
         margin-right: 5px;
       }
-      > div{
-        > button{
+
+      > div {
+        > button.login-button {
           min-width: 100%;
           border-radius: 24px;
           padding: 10px 40px;
-          margin-top: 30px;
+          margin: 20px 0;
           border: none;
           background-color: variable.$theme-red;
           color: variable.$theme-light;
         }
+
         .user,
-        .password{
+        .password {
           display: flex;
           line-height: 56px;
           margin-left: 5px;
           margin-bottom: 10px;
-          > input{
+
+          > input {
             width: 200px;
             font-size: 16px;
             border: none;
             outline: none;
             border-bottom: #aba0e6 1px dotted;
+          }
+        }
+      }
+
+      .cas-container {
+        margin: 50px 0;
+
+        > .cas-button {
+          border-radius: 10px;
+          background: #9b0000;
+          cursor: pointer;
+          color: #f1f1f1;
+          font-size: small;
+          padding: 20px 30px;
+        }
+      }
+
+      .change-container {
+        display: flex;
+
+        > .change-button {
+          font-size: small;
+          font-weight: bold;
+          cursor: pointer;
+          margin: 0 auto;
+
+          > img {
+            width: 20px;
+            margin-right: 3px;
           }
         }
       }

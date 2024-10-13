@@ -122,7 +122,7 @@
         <Delete @delete="deleteYear" :tagetId="currentYear" v-show="currentYear"/>
       </div>
     </div>
-    <OperationBar :addShow="isAdmin" :itemList="arr"
+    <OperationBar :addShow="isAdmin" :itemList="itemArr" :modelList="modelArr" :isModelShow="true"
                   :userList="userArr" @add="addItem" @export="download"
                   @handleSearch="handleSearch" @handleImport="handleImport"/>
     <div class="loading" v-show="!isShow">
@@ -134,11 +134,14 @@
              @change="handleTableChange"
              row-key="itemId"
              bordered>
-      <template v-slot:bodyCell="{ column,record }">
-            <span v-if="column.dataIndex==='operation'">
+      <template v-slot:bodyCell="{ column,record,index }">
+        <span v-if="column.dataIndex==='serial'">
+                  {{ dataSource.indexOf(record) + 1 }}
+        </span>
+        <span v-if="column.dataIndex==='operation'" style="white-space: nowrap;">
                   <a @click="onEdit(record)">编辑</a>
                   <Delete @delete="deleteItem" :tagetId="record.itemId" v-show="isAdmin"/>
-            </span>
+        </span>
       </template>
     </a-table>
   </div>
@@ -318,12 +321,24 @@ watch(currentYear, (newValue, oldValue) => {
 const download = () => {
   downloadExcel("/item", dataSource.value, "资产表.xlsx")
 }
-const set = computed(() => {
+const itemSet = computed(() => {
   return new Set(dataSourceTemplate.value.map(item => (item.itemName)))
 })
-const arr = computed(() => {
+const itemArr = computed(() => {
   let array = []
-  set.value.forEach((item) => {
+  itemSet.value.forEach((item) => {
+    array.push({
+      value: item,
+    })
+  })
+  return array
+})
+const modelSet = computed(() => {
+  return new Set(dataSourceTemplate.value.map(item => (item.itemModel)))
+})
+const modelArr = computed(() => {
+  let array = []
+  modelSet.value.forEach((item) => {
     array.push({
       value: item,
     })
@@ -343,15 +358,18 @@ const userArr = computed(() => {
   return array
 })
 const itemSelected = ref([])
+const modelSelected = ref([])
 const userSelected = ref([])
 const handleSearch = (searchParams) => {
   isShow.value = false;
   dataSource.value = dataSourceTemplate.value.filter((item) => {
     itemSelected.value = searchParams.itemSelected;
+    modelSelected.value = searchParams.modelSelected;
     userSelected.value = searchParams.userSelected;
     const itemMatch = itemSelected.value.length === 0 || itemSelected.value.some(keyword => item.itemName.includes(keyword));
+    const modelMatch = modelSelected.value.length === 0 || modelSelected.value.some(keyword => item.itemModel.includes(keyword));
     const userMatch = userSelected.value.length === 0 || userSelected.value.some(keyword => item.userName.includes(keyword));
-    return itemMatch && userMatch;
+    return itemMatch && modelMatch && userMatch;
   });
   isShow.value = true;
 };
@@ -359,18 +377,25 @@ const handleTableChange = (pagination, filters, sorter) => {
   if (!filters.itemUnit) {
     dataSource.value = dataSourceTemplate.value.filter((item) => {
       const itemMatch = itemSelected.value.length === 0 || itemSelected.value.some(keyword => item.itemName.includes(keyword));
+      const modelMatch = modelSelected.value.length === 0 || modelSelected.value.some(keyword => item.itemModel.includes(keyword));
       const userMatch = userSelected.value.length === 0 || userSelected.value.some(keyword => item.userName.includes(keyword));
-      return itemMatch && userMatch;
+      return itemMatch && modelMatch && userMatch;
     });
   } else {
     dataSource.value = dataSourceTemplate.value.filter((item) => {
       const itemMatch = itemSelected.value.length === 0 || itemSelected.value.some(keyword => item.itemName.includes(keyword));
+      const modelMatch = modelSelected.value.length === 0 || modelSelected.value.some(keyword => item.itemModel.includes(keyword));
       const userMatch = userSelected.value.length === 0 || userSelected.value.some(keyword => item.userName.includes(keyword));
-      return filters.itemUnit.some(keyword => item.itemUnit.includes(keyword)) && itemMatch && userMatch;
+      return filters.itemUnit.some(keyword => item.itemUnit.includes(keyword)) && itemMatch && modelMatch && userMatch;
     });
   }
 };
 const columns = [
+  {
+    title: '序号',
+    dataIndex: 'serial', // 使用一个虚拟的键名，因为我们不直接从dataSource取序号
+    width: '6%', // 您可以按需调整宽度
+  },
   {
     title: '类型',
     dataIndex: 'itemType',
@@ -393,11 +418,11 @@ const columns = [
   }, {
     title: '价值',
     dataIndex: 'itemPrice',
-    width: '10%',
+    width: '6%',
   }, {
     title: '领用人',
     dataIndex: 'userName',
-    width: '10%',
+    width: '8%',
   }, {
     title: '领用单位',
     dataIndex: 'itemUnit',
