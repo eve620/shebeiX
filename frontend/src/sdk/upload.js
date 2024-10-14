@@ -1,4 +1,5 @@
 import getInstance from "@/sdk/Instance.js";
+import SparkMD5 from 'spark-md5'
 
 const CHUNK_SIZE = 1024 * 1024;
 const instance = getInstance()

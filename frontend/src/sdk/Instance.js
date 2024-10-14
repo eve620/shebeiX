@@ -2,11 +2,12 @@
 import axios from 'axios';
 
 // export const baseURL = 'http://localhost:9000'
-export const baseURL = '/api'
+// export const baseURL = '/api'
 
 
 const $axios = axios.create({
-    baseURL,
+    baseURL:'/',
+    // baseURL: 'http://localhost:9000',
     withCredentials: true
 });
 

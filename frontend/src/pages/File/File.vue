@@ -34,14 +34,14 @@
 <script setup>
 import Files from "@/pages/File/Files.vue";
 import Button from "@/components/Button/Button.vue";
-import {computed, onBeforeMount, reactive, ref, watch} from "vue";
+import {computed, onBeforeMount, ref, watch} from "vue";
 import Path from "@/components/Path/Path.vue";
 import {useRoute} from "vue-router";
-import getInstance, {baseURL} from "@/sdk/Instance.js";
 import router from "@/router.js";
 import Uploader from "@/pages/File/Uploader.vue";
 import {message} from "ant-design-vue";
 import {validateDirOrFileName} from "@/sdk/utils.js";
+import getInstance from "@/sdk/Instance.js";
 
 const route = useRoute()
 const file = ref([])
@@ -129,7 +129,7 @@ function download() {
   if (selected.value) {
     if (selected.value.length === 1 && selected.value[0].fileType !== "dir") {
       //处理下载单独文件逻辑
-      window.open(baseURL + "/fileStorage/download?id=" + selected.value[0].id);
+      window.open("/fileStorage/download?id=" + selected.value[0].id);
       // window.location.href = baseURL + "/fileStorage/download?id=" + selected.value[0].id;
     } else {
       //处理下载多个文件压缩包逻辑
@@ -138,7 +138,7 @@ function download() {
       // // 排除所有文件夹
       const query = new URLSearchParams();
       downloadIds.forEach(id => query.append("id", id))
-      window.open(baseURL + "/fileStorage/downloadZip?" + query);
+      window.open("/fileStorage/downloadZip?" + query);
       // window.location.href = baseURL + "/fileStorage/downloadZip?" + query
     }
   }

@@ -1,3 +1,8 @@
+import getInstance from "@/sdk/Instance.js";
+
+const CHUNK_SIZE = 1024 * 1024;
+const instance = getInstance()
+
 export class UploadFile {
     constructor(file) {
         this.file = file;
