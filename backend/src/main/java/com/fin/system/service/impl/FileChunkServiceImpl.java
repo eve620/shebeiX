@@ -39,7 +39,7 @@ public class FileChunkServiceImpl extends ServiceImpl<FileChunkMapper, FileChunk
         // 如果不是0，则拿到第一个数据，查看文件是否分片
         // 如果没有分片，那么直接返回已经上穿成功
         FileChunk fileChunk = list.get(0);
-        if (fileChunk.getTotalChunk() == 1) {
+        if (fileChunk.getTotalChunks() == 1) {
             vo.setUploaded(true);
             return vo;
         }
@@ -48,7 +48,7 @@ public class FileChunkServiceImpl extends ServiceImpl<FileChunkMapper, FileChunk
         for (FileChunk chunk : list) {
             uploadedFiles.add(chunk.getChunkNumber());
         }
-        if (uploadedFiles.size() == fileChunk.getTotalChunk()) {
+        if (uploadedFiles.size() == fileChunk.getTotalChunks()) {
             vo.setUploaded(true);
         }
         vo.setUploadedChunks(uploadedFiles);

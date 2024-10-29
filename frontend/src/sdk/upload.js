@@ -63,7 +63,7 @@ export class UploadFile {
             formData.append('currentChunkSize', end - start); // 使用实际的slice大小
             formData.append('totalSize', this.file.size); // 使用整个文件的大小
             formData.append('identifier', this.md5Hash);
-            formData.append('filename', this.file.name); // 使用文件的实际名称
+            formData.append('fileName', this.file.name); // 使用文件的实际名称
             formData.append('relativePath', relativePath); // 如果你需要相对路径W
             formData.append('dirPath', dirPath || ""); // 如果你需要绝对路径
             formData.append('file', fileChunk); // 添加文件切片

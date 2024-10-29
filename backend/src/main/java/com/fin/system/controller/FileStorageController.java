@@ -51,8 +51,8 @@ public class FileStorageController {
     private FileChunkService fileChunkService;
 
     @GetMapping("/list")
-    public R<List<FileStorage>> list(String parent) {
-        return fileStorageService.getFileList(parent);
+    public R<List<FileStorage>> list(HttpServletRequest request, String parent) {
+        return fileStorageService.getFileList(request, parent);
     }
 
     /**
@@ -64,12 +64,12 @@ public class FileStorageController {
      */
     @PostMapping("/upload")
     public R<Boolean> upload(HttpServletRequest request, FileChunkDto dto, HttpServletResponse response) {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userInfo") == null) {
+        UserInfo user = getCurrentUser(request);
+        if (user == null) {
             return R.error("用户未登录");
         }
-        UserInfo user = (UserInfo) session.getAttribute("userInfo");
         dto.setCreateBy(user.userName);
+        dto.setCreateById(user.userId);
         try {
             Boolean status = fileStorageService.uploadFile(dto);
             if (status) {
@@ -87,13 +87,13 @@ public class FileStorageController {
 
     @GetMapping("/check")
     public R<CheckResultVo> checkUpload(HttpServletRequest request, String md5, String filePath) {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userInfo") == null) {
+        UserInfo user = getCurrentUser(request);
+        if (user == null) {
             return R.error("用户未登录");
         }
-        UserInfo user = (UserInfo) session.getAttribute("userInfo");
         LambdaQueryWrapper<FileChunk> chunkQueryWrapper = new LambdaQueryWrapper<>();
         chunkQueryWrapper.eq(FileChunk::getIdentifier, md5);
+        //获取所有chunks及chunk的号码
         List<FileChunk> uploadedChunks = fileChunkService.list(chunkQueryWrapper);
         List<Integer> chunkNums = uploadedChunks.stream()
                 .map(FileChunk::getChunkNumber)
@@ -102,13 +102,14 @@ public class FileStorageController {
         res.setUploaded(false);
         res.setUploadedChunks(chunkNums);
         if (chunkNums.isEmpty()) return R.success(res);
+        //在storage里查询
         LambdaQueryWrapper<FileStorage> storageQueryWrapper = new LambdaQueryWrapper<>();
         storageQueryWrapper.eq(FileStorage::getIdentifier, md5);
         List<FileStorage> storages = fileStorageService.list(storageQueryWrapper);
         if (!storages.isEmpty()) {
             res.setUploaded(true);
             for (FileStorage storage : storages) {
-                if (Objects.equals(storage.getFilePath(), filePath)) {
+                if (Objects.equals(storage.getFilePath(), filePath) && Objects.equals(storage.getCreateById(), user.userId)) {
                     return R.success(res);
                 }
             }
@@ -116,6 +117,12 @@ public class FileStorageController {
             storageCopy.setId(null);
             storageCopy.setCreateBy(user.userName);
             storageCopy.setFilePath(filePath);
+            Path path = Paths.get(filePath);
+            Path fileName = path.getFileName();
+            storageCopy.setRealName(fileName.toString());
+            storageCopy.setCreateBy(user.userName);
+            storageCopy.setCreateById(user.userId);
+            storageCopy.setUpdateBy(user.userName);
             storageCopy.setCreateTime(null);
             storageCopy.setUpdateTime(null);
             fileStorageService.save(storageCopy);
@@ -125,17 +132,17 @@ public class FileStorageController {
 
     @PostMapping("/createDir")
     public R<String> createDir(HttpServletRequest request, @RequestBody String dirPath) {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userInfo") == null) {
+        UserInfo user = getCurrentUser(request);
+        if (user == null) {
             return R.error("用户未登录");
         }
         //检查是否已创建
         LambdaQueryWrapper<FileStorage> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(FileStorage::getFileType, "dir");
         queryWrapper.eq(FileStorage::getFilePath, dirPath);
+        queryWrapper.eq(FileStorage::getCreateById, user.userId);
         FileStorage storage = fileStorageService.getOne(queryWrapper);
         if (storage != null) return R.success("文件夹已创建");
-        UserInfo user = (UserInfo) session.getAttribute("userInfo");
 
         Path filePath = Paths.get(dirPath);
         String dirName = filePath.getFileName().toString();
@@ -144,14 +151,16 @@ public class FileStorageController {
         fileStorage.setFileType("dir");
         fileStorage.setFilePath(dirPath);
         fileStorage.setCreateBy(user.userName);
+        fileStorage.setCreateById(user.userId);
+        fileStorage.setUpdateBy(user.userName);
         fileStorageService.save(fileStorage);
         return R.success("文件夹创建成功");
     }
 
     @DeleteMapping(value = "/delete")
-    public R<String> deleteItem(HttpServletRequest request, String deleteId) {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userInfo") == null) {
+    public R<String> deleteItem(HttpServletRequest request, String deleteId){
+        UserInfo user = getCurrentUser(request);
+        if (user == null) {
             return R.error("用户未登录");
         }
         LambdaQueryWrapper<FileStorage> storageQueryWrapper = new LambdaQueryWrapper<>();
@@ -162,6 +171,7 @@ public class FileStorageController {
             String filePath = storage.getFilePath();
             LambdaQueryWrapper<FileStorage> sonQueryWrapper = new LambdaQueryWrapper<>();
             sonQueryWrapper.likeRight(FileStorage::getFilePath, filePath + "/");
+            sonQueryWrapper.eq(FileStorage::getCreateById, user.userId);
             List<FileStorage> sonList = fileStorageService.list(sonQueryWrapper);
             if (!sonList.isEmpty()) {
                 //递归调用逻辑删除
@@ -173,8 +183,8 @@ public class FileStorageController {
                     }
                 }
             }
-        } else //删除的是不同路径相同文件
-        {
+        } else {
+            //删除的是不同路径相同文件
             deleteFile(storage);
         }
         fileStorageService.remove(storageQueryWrapper);
@@ -182,10 +192,11 @@ public class FileStorageController {
     }
 
     @PutMapping("/rename")
-    public R<String> rename(String renameId, String newName) {
+    public R<String> rename(HttpServletRequest request, String renameId, String newName) {
         LambdaQueryWrapper<FileStorage> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(FileStorage::getId, renameId);
         FileStorage storage = fileStorageService.getOne(queryWrapper);
+        storage.setUpdateTime(null);
         Path filePath = Paths.get(storage.getFilePath());
         if (Objects.equals(storage.getFileType(), "dir")) {
             storage.setRealName(newName);
@@ -234,7 +245,7 @@ public class FileStorageController {
     @GetMapping("/download")
     public void downloadByIdentifier(HttpServletRequest request, HttpServletResponse response, String id,
                                      @RequestHeader(value = "Range", required = false) String range) throws IOException {
-        fileStorageService.downloadByIdentifier(id, request, response,range);
+        fileStorageService.downloadByIdentifier(id, request, response, range);
     }
 
     @Data
@@ -301,6 +312,14 @@ public class FileStorageController {
             // 异常处理（记录日志，重新抛出等）
             e.printStackTrace();
         }
+    }
+
+    private UserInfo getCurrentUser(HttpServletRequest request){
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("userInfo") == null) {
+            return null;
+        }
+        return (UserInfo) session.getAttribute("userInfo");
     }
 
     private void addFileToZip(FileStorage fileStorage, String relativePath, ZipOutputStream output) throws IOException {

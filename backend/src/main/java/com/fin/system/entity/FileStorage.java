@@ -34,6 +34,8 @@ public class FileStorage implements Serializable {
     private String identifier;
     /**创建者**/
     private String createBy;
+    /**创建者ID**/
+    private Integer createById;
     /**创建时间**/
     private LocalDateTime createTime;
     /**更新人**/

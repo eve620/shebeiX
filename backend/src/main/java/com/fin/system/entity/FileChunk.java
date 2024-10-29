@@ -29,13 +29,15 @@ public class FileChunk implements Serializable {
     /**文件总大小**/
     private Long totalSize;
     /**总分片数**/
-    private Integer totalChunk;
+    private Integer totalChunks;
     /**文件标识 md5校验码**/
     private String identifier;
     /**相对路径**/
     private String relativePath;
     /**创建者**/
     private String createBy;
+    /**创建者ID**/
+    private Integer createById;
     /**创建时间**/
     private LocalDateTime createTime;
     /**更新人**/

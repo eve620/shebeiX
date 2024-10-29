@@ -1,5 +1,6 @@
 package com.fin.system.dto;
 
+import io.swagger.models.auth.In;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -42,7 +43,7 @@ public class FileChunkDto {
     /**
      * 文件名
      */
-    private String filename;
+    private String fileName;
     /**
      * 文件夹上传的时候文件的相对路径属性
      */
@@ -59,4 +60,8 @@ public class FileChunkDto {
      * 创建人
      */
     private String createBy;
+    /**
+     * 创建人ID
+     */
+    private Integer createById;
 }

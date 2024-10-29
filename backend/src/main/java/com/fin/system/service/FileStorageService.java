@@ -16,7 +16,7 @@ import java.util.List;
  * @since 2022-11-15 17:49:41
  */
 public interface FileStorageService extends IService<FileStorage> {
-    R<List<FileStorage>> getFileList(String parent);
+    R<List<FileStorage>> getFileList(HttpServletRequest request, String parent);
 
     /**
      * 文件上传接口
@@ -33,6 +33,6 @@ public interface FileStorageService extends IService<FileStorage> {
      * @param request
      * @param response
      */
-    void downloadByIdentifier(String identifier, HttpServletRequest request, HttpServletResponse response,String range);
+    void downloadByIdentifier(String identifier, HttpServletRequest request, HttpServletResponse response, String range);
 }
 

@@ -9,6 +9,7 @@ import com.fin.system.commen.R;
 import com.fin.system.dto.FileChunkDto;
 import com.fin.system.entity.FileChunk;
 import com.fin.system.entity.FileStorage;
+import com.fin.system.entity.UserInfo;
 import com.fin.system.service.FileChunkService;
 import com.fin.system.service.FileStorageService;
 import com.fin.system.util.BulkFileUtil;
@@ -21,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -60,9 +62,14 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
     FileChunkService fileChunkService;
 
     @Override
-
-    public R<List<FileStorage>> getFileList(String parent) {
+    public R<List<FileStorage>> getFileList(HttpServletRequest request, String parent) {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("userInfo") == null) {
+            return R.error("用户未登录");
+        }
+        UserInfo user = (UserInfo) session.getAttribute("userInfo");
         LambdaQueryWrapper<FileStorage> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(FileStorage::getCreateById, user.userId);
         List<FileStorage> fileInfoList = this.list(queryWrapper);
         List<FileStorage> matchedFiles = fileInfoList.stream()
                 .filter(file -> matchStringWithoutSlash(file.getFilePath(), parent))
@@ -169,13 +176,12 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
     private void saveFile(FileChunkDto dto, String fileName) {
 
         FileChunk chunk = BeanUtil.copyProperties(dto, FileChunk.class);
-        chunk.setFileName(dto.getFilename());
-        chunk.setTotalChunk(dto.getTotalChunks());
+        chunk.setUpdateBy(chunk.getCreateBy());
         fileChunkService.save(chunk);
         // 如果所有快都上传完成，那么在文件记录表中存储一份数据
         // todo 这里最好每次上传完成都存一下缓存，从缓存中查看是否所有块上传完成，这里偷懒了
         if (dto.getChunkNumber().equals(dto.getTotalChunks())) {
-            String name = dto.getFilename();
+            String name = dto.getFileName();
             MultipartFile file = dto.getFile();
             FileStorage fileStorage = new FileStorage();
             fileStorage.setRealName(file.getOriginalFilename());
@@ -185,6 +191,8 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
             fileStorage.setSize(dto.getTotalSize());
             fileStorage.setIdentifier(dto.getIdentifier());
             fileStorage.setCreateBy(dto.getCreateBy());
+            fileStorage.setUpdateBy(dto.getCreateBy());
+            fileStorage.setCreateById(dto.getCreateById());
             if (Objects.equals(dto.getDirPath(), "")) {
                 fileStorage.setFilePath(dto.getRelativePath());
             } else {

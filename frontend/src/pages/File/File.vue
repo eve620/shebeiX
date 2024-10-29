@@ -1,9 +1,9 @@
 <template>
   <div>
-    <a-modal okText="确定" cancelText="取消" title="新建文件夹" v-model:open="isNewDirOpen" @ok="onCreateDirOk">
+    <a-modal okText="确定" cancelText="取消" title="新建文件夹" v-model:open="isNewDirOpen" @ok="onCreateDirOk" @cancel="newName=''">
       <a-input type="text" placeholder="文件夹名称" v-model:value="newName"/>
     </a-modal>
-    <a-modal okText="确定" cancelText="取消" title="修改文件名" v-model:open="isRenameActive" @ok="rename">
+    <a-modal okText="确定" cancelText="取消" title="修改文件名" v-model:open="isRenameActive" @ok="rename" @cancel="newName=''">
       <a-input type="text" placeholder="新文件名" v-model:value="newName"/>
     </a-modal>
     <a-modal okText="确定" cancelText="取消" title="删除文件" @ok="deleteFileOrDir" v-model:open="isDelete">
