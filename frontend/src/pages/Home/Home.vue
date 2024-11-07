@@ -118,7 +118,6 @@ const onBreakpoint = broken => {
 };
 const selectedKeys = ref(['1']); </script>
 <style scoped>
-@import "style.scss";
 @import "../../scss/themeRed.scss";
 
 .loading {

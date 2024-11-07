@@ -19,18 +19,18 @@
           }}</span>
         <span>{{ formatBytes(entry.size) }}</span>
         <span>{{ entry.type === "file" ? "文件" : "文件夹" }}</span>
-        <span>{{ checkUpload(entry) ? "上传完成" : (entry.isPaused ? "等待继续" : "上传中") }}</span>
+        <span>{{ checkUpload(entry) ? "上传完成" : (isPaused(entry) ? "等待继续" : "上传中") }}</span>
         <div>
-          <CaretRightOutlined @click="resumeUpload(entry)" v-if="!checkUpload(entry) && entry.isPaused"
+          <CaretRightOutlined @click="resumeUpload(entry)" v-if="!checkUpload(entry) && isPaused(entry)"
                               style="font-size: 16px"/>
-          <PauseOutlined @click="pauseUpload(entry)" v-if="!checkUpload(entry) && !entry.isPaused"
+          <PauseOutlined @click="pauseUpload(entry)" v-if="!checkUpload(entry) && !isPaused(entry)"
                          style="font-size: 16px"/>
-          <CloseOutlined @click="deleteFile(entry)" v-if="!checkUpload(entry) && entry.isPaused"
+          <CloseOutlined @click="deleteFile(entry)" v-if="!checkUpload(entry) && isPaused(entry)"
                          style="font-size: 14px;margin-left: 5px"/>
           <CheckOutlined v-if="checkUpload(entry)" style="font-size: 16px"/>
         </div>
       </div>
-<!--      <button @click="()=>{console.log(fileList)}">测试上传</button>-->
+      <!--      <button @click="()=>{console.log(fileList)}">测试上传</button>-->
       <input ref="fileInput" class="file" @change="handleFileChange" type="file" multiple/>
     </div>
   </div>
@@ -78,34 +78,44 @@ function checkUpload(file) {
   return true
 }
 
+function isPaused(entry) {
+  const childrenArray = Array.from(entry.children.values());
+  return childrenArray.every(item => item.isPaused);
+}
+
 function pauseUpload(entry) {
-  entry.isPaused = true
-  entry.children.forEach((value, _) => {
-    if (value) {
-      value.pause()
-    }
-  })
+  entry.children.forEach(item => item.pause())
 }
 
-function resumeUpload(entry) {
-  entry.isPaused = false
-  entry.children.forEach((value, _) => {
-    if (value) {
-      value.resume()
+async function resumeUpload(entry) {
+  for (const [_, value] of entry.children) {
+    const resume = await value.resume()
+    if (resume.status === 0 || resume.status === 2) {
+      if (resume.status === 0) {
+        pauseUpload(entry)
+        message.error(resume.message)
+      }
+      return
     }
-  })
+  }
+  message.success('上传成功')
 }
 
-function deleteFile(file) {
-  // todo 发送请求根据md5删除
+//取消删除时根据md5删除chunks
+async function deleteFile(file) {
+  for (const [_, value] of file.children) {
+    if (value.md5Hash) {
+      await instance.deleteChunks(value.md5Hash)
+    }
+  }
   fileList.delete(file)
 }
 
 //点击上传
-function handleFileChange(event) {
+async function handleFileChange(event) {
   const files = event.target.files;
   for (let i = 0; i < files.length; i++) {
-    const uploadFile = reactive(new UploadFile(files[i]))
+    const uploadFile = reactive(new UploadFile(files[i], props.path, files[i].name))
     const children = new Map()
     let had = false
     for (let item of fileList) {
@@ -124,10 +134,14 @@ function handleFileChange(event) {
       name: files[i].name,
       size: files[i].size,
       type: "file",
-      isPaused: false,
     }
     fileList.add(entryInfo)
-    uploadFile.upload(files[i].name, props.path)
+    let upload = await uploadFile.upload()
+    if (upload.status === 1) {
+      message.success(upload.message)
+    } else if (upload.status === 0) {
+      message.error(upload.message)
+    }
   }
 }
 
@@ -146,6 +160,7 @@ function formatBytes(byteLen) {
   }
   return Math.ceil(byteLen * 100) / 100 + " " + units[index];
 }
+
 async function drop(e) {
   for (let i = 0; i < e.dataTransfer.items.length; i++) {
     const item = e.dataTransfer.items[i];
@@ -168,7 +183,6 @@ async function drop(e) {
         name: entry.name,
         size: 0,
         type: entry.isDirectory ? "dir" : "file",
-        isPaused: false,
       }
       if (entry.isDirectory) {
         //todo
@@ -179,10 +193,18 @@ async function drop(e) {
       }
       entryInfo.size = Array.from(entryInfo.children.values())
           .reduce((totalSize, child) => totalSize + child.file.size, 0);
-      for (const [key, value] of entryInfo.children) {
-        value.upload(deletePrefixSlash(key), props.path);
-      }
       fileList.add(entryInfo)
+      for (const [_, value] of entryInfo.children) {
+        let upload = await value.upload();
+        if (upload.status === 0 || upload.status === 2) {
+          if (upload.status === 0) {
+            pauseUpload(entryInfo)
+            message.error(upload.message)
+          }
+          return
+        }
+      }
+      message.success('上传成功')
     }
   }
 }
@@ -208,7 +230,7 @@ async function readDirectory(directoryEntry, entryInfo) {
 function readFile(fileEntry, entryInfo) {
   return new Promise((resolve, reject) => {
     fileEntry.file((file) => {
-      const uploadFile = reactive(new UploadFile(file));
+      const uploadFile = reactive(new UploadFile(file, props.path, deletePrefixSlash(fileEntry.fullPath)));
       entryInfo.children.set(fileEntry.fullPath, uploadFile);
       resolve();
     }, reject);

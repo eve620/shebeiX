@@ -22,6 +22,13 @@ export default function getInstance() {
 
 class Instance {
     //Common API
+    testFileDownload(path) {
+        return $axios({
+            url: path,
+            method: 'head',
+        })
+    }
+
     exportExcel(path, data) {
         return $axios({
             url: path + `/download`,
@@ -302,6 +309,14 @@ class Instance {
             url: "/fileStorage/delete",
             method: "delete",
             params: {deleteId}
+        })
+    }
+
+    deleteChunks(md5) {
+        return $axios({
+            url: "/fileStorage/deleteChunks",
+            method: "delete",
+            params: {md5}
         })
     }
 

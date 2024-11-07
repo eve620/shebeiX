@@ -40,12 +40,14 @@ export function formatBytes(byteLen) {
 }
 
 export function getFileType(mimeType) {
-    if(!mimeType) return "未知"
+    if (!mimeType) return "未知"
     const mimeTypeMap = {
         'application/x-zip-compressed': 'zip',
         'application/pdf': 'pdf',
         'image/jpeg': 'jpg',
         'image/png': 'png',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+        'application/octet-stream': 'rar'
         // 可以继续添加更多映射...
     };
 

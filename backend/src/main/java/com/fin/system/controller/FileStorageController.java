@@ -158,7 +158,7 @@ public class FileStorageController {
     }
 
     @DeleteMapping(value = "/delete")
-    public R<String> deleteItem(HttpServletRequest request, String deleteId){
+    public R<String> deleteItem(HttpServletRequest request, String deleteId) {
         UserInfo user = getCurrentUser(request);
         if (user == null) {
             return R.error("用户未登录");
@@ -189,6 +189,19 @@ public class FileStorageController {
         }
         fileStorageService.remove(storageQueryWrapper);
         return R.success("删除成功");
+    }
+
+    @DeleteMapping(value = "/deleteChunks")
+    public R<String> deleteChunks(HttpServletRequest request, String md5) {
+        UserInfo user = getCurrentUser(request);
+        if (user == null) {
+            return R.error("用户未登录");
+        }
+        LambdaQueryWrapper<FileChunk> storageQueryWrapper = new LambdaQueryWrapper<>();
+        storageQueryWrapper.eq(FileChunk::getIdentifier, md5);
+        boolean delete = fileChunkService.remove(storageQueryWrapper);
+        if (delete) return R.success("删除成功");
+        else return R.success("删除失败");
     }
 
     @PutMapping("/rename")
@@ -314,7 +327,7 @@ public class FileStorageController {
         }
     }
 
-    private UserInfo getCurrentUser(HttpServletRequest request){
+    private UserInfo getCurrentUser(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("userInfo") == null) {
             return null;
