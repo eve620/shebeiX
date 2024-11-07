@@ -15,6 +15,7 @@ import com.fin.system.service.FileStorageService;
 import com.fin.system.vo.CheckResultVo;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -49,6 +50,8 @@ public class FileStorageController {
     private FileStorageService fileStorageService;
     @Autowired
     private FileChunkService fileChunkService;
+    @Value("${file.path}")
+    private String baseFileSavePath;
 
     @GetMapping("/list")
     public R<List<FileStorage>> list(HttpServletRequest request, String parent) {
@@ -192,7 +195,7 @@ public class FileStorageController {
     }
 
     @DeleteMapping(value = "/deleteChunks")
-    public R<String> deleteChunks(HttpServletRequest request, String md5) {
+    public R<String> deleteChunks(HttpServletRequest request, String md5) throws IOException {
         UserInfo user = getCurrentUser(request);
         if (user == null) {
             return R.error("用户未登录");
@@ -200,8 +203,15 @@ public class FileStorageController {
         LambdaQueryWrapper<FileChunk> storageQueryWrapper = new LambdaQueryWrapper<>();
         storageQueryWrapper.eq(FileChunk::getIdentifier, md5);
         boolean delete = fileChunkService.remove(storageQueryWrapper);
-        if (delete) return R.success("删除成功");
-        else return R.success("删除失败");
+        if (delete) {
+            Path rootPath = Paths.get(baseFileSavePath);
+            String fullFileName = rootPath.toAbsolutePath().resolve(md5).toString();
+            Path file = Paths.get(fullFileName);
+            if (Files.exists(file)) {
+                Files.delete(file);
+            }
+            return R.success("删除成功");
+        } else return R.success("删除失败");
     }
 
     @PutMapping("/rename")
