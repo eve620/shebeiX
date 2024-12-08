@@ -41,6 +41,7 @@ public class UserController {
     private final static String casLogoutUrl = "https://ids.xidian.edu.cn/authserver/";
     private final static String casApplicationUrl = URLEncoder.encode("https://shebei.xidian.edu.cn/login", StandardCharsets.UTF_8);
     private final static String casLogoutRedirectUrl = casLogoutUrl + "logout?service=" + casApplicationUrl;
+
     public static String filenameEncoding(String filename, HttpServletRequest request) throws UnsupportedEncodingException {
         // 获得请求头中的User-Agent
         String agent = request.getHeader("User-Agent");
@@ -49,12 +50,13 @@ public class UserController {
         if (agent.contains("MSIE")) {
             // IE浏览器
             filename = URLEncoder.encode(filename, StandardCharsets.UTF_8);
-        }  else {
+        } else {
             // 其它浏览器
             filename = URLEncoder.encode(filename, StandardCharsets.UTF_8);
         }
         return filename;
     }
+
     @GetMapping("/whoami")
     public R<UserInfo> whoami(HttpServletRequest request) throws UnsupportedEncodingException {
         HttpSession session = request.getSession(false);

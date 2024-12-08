@@ -6,8 +6,8 @@ import axios from 'axios';
 
 
 const $axios = axios.create({
-    // baseURL:'/',
-    baseURL: 'http://localhost:9000',
+    baseURL:'/',
+    // baseURL: 'http://localhost:9000',
     withCredentials: true
 });
 
