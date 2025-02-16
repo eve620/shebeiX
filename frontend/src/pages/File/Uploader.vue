@@ -25,7 +25,7 @@
                               style="font-size: 16px"/>
           <PauseOutlined @click="pauseUpload(entry)" v-if="!checkUpload(entry) && !isPaused(entry)"
                          style="font-size: 16px"/>
-          <CloseOutlined @click="deleteFile(entry)" v-if="!checkUpload(entry) && isPaused(entry)"
+          <CloseOutlined @click="deleteFile(entry)" v-if="!checkUpload(entry) && isPaused(entry) && entry.type==='file'"
                          style="font-size: 14px;margin-left: 5px"/>
           <CheckOutlined v-if="checkUpload(entry)" style="font-size: 16px"/>
         </div>
@@ -64,7 +64,7 @@ function computeProgress(entry) {
   let uploaded = 0
   for (let [_, value] of entry.children) {
     total += value.totalChunks
-    uploaded += value.currentChunk
+    uploaded += value.uploadedChunks.length
   }
   return uploaded / total
 }

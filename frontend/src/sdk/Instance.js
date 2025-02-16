@@ -6,8 +6,8 @@ import axios from 'axios';
 
 
 const $axios = axios.create({
-    baseURL:'/',
-    // baseURL: 'http://localhost:9000',
+    // baseURL:'/',
+    baseURL: 'http://localhost:9000',
     withCredentials: true
 });
 
@@ -268,20 +268,23 @@ class Instance {
 
     //File API
     getFileList(parent) {
+        const params = new URLSearchParams();
+        params.append('parent', parent);
         return $axios({
             url: '/fileStorage/list',
             method: 'get',
-            params: {
-                parent
-            }
+            params
         })
     }
 
     checkFile(md5, filePath) {
+        const params = new URLSearchParams();
+        params.append('md5', md5)
+        params.append('filePath', filePath);
         return $axios({
             url: `/fileStorage/check`,
             method: 'get',
-            params: {md5, filePath}
+            params
         })
     }
 

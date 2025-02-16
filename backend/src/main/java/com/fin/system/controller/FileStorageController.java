@@ -54,7 +54,8 @@ public class FileStorageController {
     private String baseFileSavePath;
 
     @GetMapping("/list")
-    public R<List<FileStorage>> list(HttpServletRequest request, String parent) {
+    public R<List<FileStorage>> list(HttpServletRequest request, @RequestParam String parent) {
+        System.out.println(parent);
         return fileStorageService.getFileList(request, parent);
     }
 

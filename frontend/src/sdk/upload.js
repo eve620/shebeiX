@@ -11,8 +11,8 @@ export class UploadFile {
     constructor(file, dirPath, relativePath, maxUploadNum) {
         this.file = file;
         this.isPaused = false; // 暂停状态
-        this.currentChunk = 0; // 当前已上传的chunk索引
         this.uploadedChunks = []
+        this.pendingChunks = [];
         this.totalChunks = Math.ceil(this.file.size / CHUNK_SIZE) === 0 ? 1 : Math.ceil(this.file.size / CHUNK_SIZE);
         this.maxUploadNum = maxUploadNum ?? 3
         this.isCompleted = false; // 新增标志变量
@@ -23,29 +23,40 @@ export class UploadFile {
     async upload() {
         try {
             this.md5Hash = await this[computeMD5]();
-            await this[check]()
+            await this[check]();
             if (this.isCompleted) {
-                return {status: 1, message: `上传成功`};
+                return { status: 1, message: `上传成功` };
             }
-            this.currentChunk = 0
+
+            // 初始化任务队列
+            this.pendingChunks = [];
+            for (let i = 1; i <= this.totalChunks; i++) {
+                if (!this.uploadedChunks.includes(i)) {
+                    this.pendingChunks.push(i);
+                }
+            }
+
+            // 并发上传
             const promises = [];
-            for (let i = 0; i < Math.min(this.maxUploadNum, this.totalChunks); i++, this.currentChunk++) {
-                promises.push(this[request]());
+            for (let i = 0; i < Math.min(this.maxUploadNum, this.pendingChunks.length); i++) {
+                promises.push(this[request](this.pendingChunks));
             }
             await Promise.all(promises);
+
             if (this.isCompleted) {
-                return {status: 1, message: `上传成功`};
+                return { status: 1, message: `上传成功` };
             } else {
-                return {status: 2, message: `已暂停`};
+                return { status: 2, message: `已暂停` };
             }
         } catch (error) {
-            this.isPaused = true
-            return {status: 0, message: `上传文件失败: ${error.message}`};
+            this.isPaused = true;
+            return { status: 0, message: `上传文件失败: ${error.message}` };
         }
     }
 
     pause() {
         this.isPaused = true;
+        this.pendingChunks = []; // 清空队列
     }
 
     async resume() {
@@ -53,21 +64,18 @@ export class UploadFile {
         return await this.upload();
     }
 
-    async [request]() {
-        // 使用 Set 存储已上传的块
-        const uploadedChunksSet = new Set(this.uploadedChunks);
-        // 找到下一个未上传的块
-        while (this.currentChunk < this.totalChunks && uploadedChunksSet.has(this.currentChunk + 1)) {
-            this.currentChunk++;
-        }
+    async [request](pendingChunks) {
+        while (pendingChunks.length > 0 && !this.isPaused) {
+            const chunkNumber = pendingChunks.shift(); // 从队列中取出分片
+            if (this.uploadedChunks.includes(chunkNumber)) continue; // 跳过已上传
 
-        if (this.currentChunk < this.totalChunks && !this.isPaused) {
-            const start = this.currentChunk * CHUNK_SIZE;
+            const start = (chunkNumber - 1) * CHUNK_SIZE;
             const end = Math.min(this.file.size, start + CHUNK_SIZE);
             const chunk = this.file.slice(start, end);
-            const fileChunk = new File([chunk], this.file.name, {type: this.file.type});
+            const fileChunk = new File([chunk], this.file.name, { type: this.file.type });
+
             const formData = new FormData();
-            formData.append('chunkNumber', this.currentChunk + 1);
+            formData.append('chunkNumber', chunkNumber);
             formData.append('totalChunks', this.totalChunks);
             formData.append('chunkSize', CHUNK_SIZE);
             formData.append('currentChunkSize', end - start);
@@ -80,20 +88,15 @@ export class UploadFile {
 
             try {
                 await instance.uploadFileChunk(formData);
-                this.currentChunk++;
-                if (this.currentChunk < this.totalChunks) {
-                    await this[request]();
-                } else {
+                this.uploadedChunks.push(chunkNumber); // 更新本地状态
+                if (this.uploadedChunks.length === this.totalChunks) {
                     this.isCompleted = true;
+                }else {
+                    await this[request](pendingChunks);
                 }
             } catch (error) {
-                // 分析错误类型
-                if (error.message) {
-                    if (error.message === "Network Error") throw new Error("网络错误");
-                    else throw new Error(error.message);
-                } else {
-                    throw new Error('其他错误');
-                }
+                pendingChunks.push(chunkNumber); // 重新加入队列
+                throw error;
             }
         }
     }
@@ -134,7 +137,6 @@ export class UploadFile {
             const res = await instance.checkFile(this.md5Hash, this.dirPath ? this.dirPath + "/" + this.relativePath : this.relativePath);
             if (res.data.code === 1) {
                 if (res.data.data.uploaded) {
-                    this.currentChunk = this.totalChunks;
                     this.isCompleted = true; // 标记上传完成
                 }
                 this.uploadedChunks = res.data.data.uploadedChunks;

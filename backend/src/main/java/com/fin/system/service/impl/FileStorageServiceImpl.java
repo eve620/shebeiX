@@ -15,7 +15,9 @@ import com.fin.system.service.FileStorageService;
 import com.fin.system.util.BulkFileUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -23,25 +25,23 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 文件存储表(FileStorage)表服务实现类
- *
- * @author 散装java
- * @since 2022-11-15 17:49:41
  */
 @Service()
 @Slf4j
@@ -60,6 +60,7 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
 
     @Resource
     FileChunkService fileChunkService;
+    private final ConcurrentHashMap<String, ReentrantLock> mergeLocks = new ConcurrentHashMap<>();
 
     @Override
     public R<List<FileStorage>> getFileList(HttpServletRequest request, String parent) {
@@ -85,30 +86,93 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
         if (dto.getFile() == null) {
             throw new RuntimeException("文件不能为空");
         }
-        Path rootPath = Paths.get(baseFileSavePath);
-        String fullFileName = rootPath.toAbsolutePath().resolve(dto.getIdentifier()).toString();
-        // 检查目录是否存在，不存在则创建
-        if (!rootPath.toFile().exists()) {
-            try {
-                Files.createDirectories(rootPath); // 注意：这会递归创建所有必需的父目录
-            } catch (IOException e) {
-                // 处理创建目录失败的情况，例如记录日志或抛出自定义异常
-                throw new RuntimeException("创建文件保存目录失败：" + e.getMessage());
+        Path tempDir = Paths.get(baseFileSavePath, "temp", dto.getIdentifier());
+        Path finalFile = Paths.get(baseFileSavePath, dto.getIdentifier());
+        try {
+            // 创建目录
+            if (!Files.exists(tempDir)) {
+                Files.createDirectories(tempDir);
             }
+
+            // 保存分片
+            Path chunkFile = tempDir.resolve(dto.getChunkNumber() + ".chunk");
+            Files.copy(dto.getFile().getInputStream(), chunkFile, StandardCopyOption.REPLACE_EXISTING);
+            FileChunk chunk = BeanUtil.copyProperties(dto, FileChunk.class);
+            chunk.setUpdateBy(chunk.getCreateBy());
+            fileChunkService.save(chunk);
+            // 检查是否所有分片上传完成
+            if (isUploadComplete(tempDir, dto.getTotalChunks())) {
+                //防止并发重复操作
+                if (Files.exists(finalFile)) return true;
+                mergeChunks(dto.getIdentifier(), dto.getTotalChunks(), tempDir, finalFile);
+                this.saveFile(dto, finalFile.toAbsolutePath().toString());
+            }
+            return true;
+        } catch (IOException e) {
+            throw new RuntimeException("文件操作失败", e);
         }
-        Boolean uploadFlag;
-        // 如果是单文件上传
-        if (dto.getTotalChunks() == 1) {
-            uploadFlag = this.uploadSingleFile(fullFileName, dto);
-        } else {
-            // 分片上传
-            uploadFlag = this.uploadSharding(fullFileName, dto);
+    }
+
+//    /**
+//     * 分片上传方法
+//     * 这里使用 RandomAccessFile 方法，也可以使用 MappedByteBuffer 方法上传
+//     * 可以省去文件合并的过程
+//     *
+//     * @param fullFileName 文件名
+//     * @param dto          文件dto
+//     */
+//    private Boolean uploadSharding(String fullFileName, FileChunkDto dto) {
+//        // try 自动资源管理
+//        try (RandomAccessFile randomAccessFile = new RandomAccessFile(fullFileName, "rw")) {
+//            // 分片大小必须和前端匹配，否则上传会导致文件损坏
+//            long chunkSize = dto.getChunkSize() == 0L ? defaultChunkSize : dto.getChunkSize().longValue();
+//            // 偏移量, 意思是我从拿一个位置开始往文件写入，每一片的大小 * 已经存的块数
+//            long offset = chunkSize * (dto.getChunkNumber() - 1);
+//            // 定位到该分片的偏移量
+//            randomAccessFile.seek(offset);
+//            // 写入
+//            randomAccessFile.write(dto.getFile().getBytes());
+//        } catch (IOException e) {
+//            log.error("文件上传失败：" + e);
+//            return Boolean.FALSE;
+//        }
+//        return Boolean.TRUE;
+//    }
+
+    private boolean isUploadComplete(Path tempDir, int totalChunks) throws IOException {
+        try (Stream<Path> files = Files.list(tempDir)) {
+            long chunkCount = files.count();
+            return chunkCount == totalChunks;
         }
-        // 如果本次上传成功则存储数据到 表中
-        if (uploadFlag) {
-            this.saveFile(dto, fullFileName);
+    }
+
+    private void mergeChunks(String identifier, int totalChunks, Path tempDir, Path finalFile) {
+        ReentrantLock lock = mergeLocks.computeIfAbsent(identifier, k -> new ReentrantLock());
+        lock.lock();
+        try {
+            try (BufferedOutputStream bos = new BufferedOutputStream(
+                    new FileOutputStream(finalFile.toFile()))) {
+
+                for (int i = 1; i <= totalChunks; i++) {
+                    Path chunk = tempDir.resolve(i + ".chunk");
+                    try (BufferedInputStream bis = new BufferedInputStream(
+                            new FileInputStream(chunk.toFile()))) {
+                        byte[] buffer = new byte[4096];
+                        int len;
+                        while ((len = bis.read(buffer)) > 0) {
+                            bos.write(buffer, 0, len);
+                        }
+                    }
+                }
+            }
+            // 清理临时文件
+            FileUtils.deleteDirectory(tempDir.toFile());
+        } catch (IOException e) {
+            throw new RuntimeException("合并文件失败", e);
+        } finally {
+            lock.unlock();
+            mergeLocks.remove(identifier);
         }
-        return uploadFlag;
     }
 
     @SneakyThrows
@@ -140,66 +204,25 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
         }
     }
 
-    /**
-     * 分片上传方法
-     * 这里使用 RandomAccessFile 方法，也可以使用 MappedByteBuffer 方法上传
-     * 可以省去文件合并的过程
-     *
-     * @param fullFileName 文件名
-     * @param dto          文件dto
-     */
-    private Boolean uploadSharding(String fullFileName, FileChunkDto dto) {
-        // try 自动资源管理
-        try (RandomAccessFile randomAccessFile = new RandomAccessFile(fullFileName, "rw")) {
-            // 分片大小必须和前端匹配，否则上传会导致文件损坏
-            long chunkSize = dto.getChunkSize() == 0L ? defaultChunkSize : dto.getChunkSize().longValue();
-            // 偏移量, 意思是我从拿一个位置开始往文件写入，每一片的大小 * 已经存的块数
-            long offset = chunkSize * (dto.getChunkNumber() - 1);
-            // 定位到该分片的偏移量
-            randomAccessFile.seek(offset);
-            // 写入
-            randomAccessFile.write(dto.getFile().getBytes());
-        } catch (IOException e) {
-            log.error("文件上传失败：" + e);
-            return Boolean.FALSE;
-        }
-        return Boolean.TRUE;
-    }
-
-    @SneakyThrows
-    private Boolean uploadSingleFile(String fullFileName, FileChunkDto dto) {
-        File localPath = new File(fullFileName);
-        dto.getFile().transferTo(localPath);
-        return Boolean.TRUE;
-    }
-
     private void saveFile(FileChunkDto dto, String fileName) {
-
-        FileChunk chunk = BeanUtil.copyProperties(dto, FileChunk.class);
-        chunk.setUpdateBy(chunk.getCreateBy());
-        fileChunkService.save(chunk);
-        // 如果所有快都上传完成，那么在文件记录表中存储一份数据
-        // todo 这里最好每次上传完成都存一下缓存，从缓存中查看是否所有块上传完成，这里偷懒了
-        if (dto.getChunkNumber().equals(dto.getTotalChunks())) {
-            String name = dto.getFileName();
-            MultipartFile file = dto.getFile();
-            FileStorage fileStorage = new FileStorage();
-            fileStorage.setRealName(file.getOriginalFilename());
-            fileStorage.setFileName(fileName);
-            fileStorage.setSuffix(FileUtil.getSuffix(name));
-            fileStorage.setFileType(file.getContentType());
-            fileStorage.setSize(dto.getTotalSize());
-            fileStorage.setIdentifier(dto.getIdentifier());
-            fileStorage.setCreateBy(dto.getCreateBy());
-            fileStorage.setUpdateBy(dto.getCreateBy());
-            fileStorage.setCreateById(dto.getCreateById());
-            if (Objects.equals(dto.getDirPath(), "")) {
-                fileStorage.setFilePath(dto.getRelativePath());
-            } else {
-                fileStorage.setFilePath(dto.getDirPath() + "/" + dto.getRelativePath());
-            }
-            this.save(fileStorage);
+        String name = dto.getFileName();
+        MultipartFile file = dto.getFile();
+        FileStorage fileStorage = new FileStorage();
+        fileStorage.setRealName(file.getOriginalFilename());
+        fileStorage.setFileName(fileName);
+        fileStorage.setSuffix(FileUtil.getSuffix(name));
+        fileStorage.setFileType(file.getContentType());
+        fileStorage.setSize(dto.getTotalSize());
+        fileStorage.setIdentifier(dto.getIdentifier());
+        fileStorage.setCreateBy(dto.getCreateBy());
+        fileStorage.setUpdateBy(dto.getCreateBy());
+        fileStorage.setCreateById(dto.getCreateById());
+        if (Objects.equals(dto.getDirPath(), "")) {
+            fileStorage.setFilePath(dto.getRelativePath());
+        } else {
+            fileStorage.setFilePath(dto.getDirPath() + "/" + dto.getRelativePath());
         }
+        this.save(fileStorage);
     }
 
     private boolean matchStringWithoutSlash(String input, String patternStr) {
@@ -207,12 +230,41 @@ public class FileStorageServiceImpl extends ServiceImpl<FileStorageMapper, FileS
             patternStr += "/";
         }
         // 使用正则表达式构造匹配模式
-        String regex = patternStr + "(?!.*[/]).*";
+        String regex = Pattern.quote(patternStr) + "(?!.*[/]).*";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(input);
-
         // 返回匹配结果
         return matcher.matches();
     }
-}
 
+    @Scheduled(cron = "0 0 2 * * ?") // 每天凌晨2点执行
+    public void cleanExpiredTempFiles() {
+        Path tempDir = Paths.get(baseFileSavePath, "temp");
+        if (!Files.exists(tempDir)) {
+            return;
+        }
+
+        try (Stream<Path> dirStream = Files.list(tempDir)) {
+            dirStream.filter(Files::isDirectory)
+                    .forEach(this::cleanExpiredDirectory);
+        } catch (IOException e) {
+            log.error("清理临时文件失败", e);
+        }
+    }
+
+    private void cleanExpiredDirectory(Path dir) {
+        try {
+            // 获取目录的最后修改时间
+            Instant lastModified = Files.getLastModifiedTime(dir).toInstant();
+            Instant now = Instant.now();
+
+            // 如果目录超过24小时未修改，则删除
+            if (Duration.between(lastModified, now).toHours() > 24) {
+                FileUtils.deleteDirectory(dir.toFile());
+                log.info("已清理过期临时目录: {}", dir);
+            }
+        } catch (IOException e) {
+            log.error("清理临时目录失败: {}", dir, e);
+        }
+    }
+}

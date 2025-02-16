@@ -116,7 +116,7 @@ async function deleteFileOrDir() {
 function handleCancel() {
   for (let file of uploaderRef.value.fileList) {
     for (let [_, value] of file.children) {
-      if ((value.currentChunk <= value.totalChunks) && !value.isPaused && !value.isCompleted) {
+      if ((value.uploadedChunks.length <= value.totalChunks) && !value.isPaused && !value.isCompleted) {
         message.info("上传中，请暂停或等待上传完成...")
         isUpload.value = true
         return
