@@ -55,7 +55,6 @@ public class FileStorageController {
 
     @GetMapping("/list")
     public R<List<FileStorage>> list(HttpServletRequest request, @RequestParam String parent) {
-        System.out.println(parent);
         return fileStorageService.getFileList(request, parent);
     }
 
