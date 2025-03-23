@@ -20,7 +20,7 @@ public class ExcelProcessor {
         List<Item> items = new ArrayList<>();
         try {
             EasyExcel.read(file.getInputStream())
-                    .head(ItemReadModel.class) // 使用模型映射
+                    .head(Item.class) // 使用模型映射
                     .sheet(0)
                     .registerReadListener(new ItemExcelListener(itemService))
                     .doRead();

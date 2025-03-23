@@ -131,7 +131,8 @@ function handleCancel() {
 function download() {
   if (selected.value) {
     if (selected.value.length === 1 && selected.value[0].fileType !== "dir") {
-      const downloadURL = "http://localhost:9000/fileStorage/download?id=" + selected.value[0].id;
+      const downloadURL = "https://shebei.xidian.edu.cn/fileStorage/download?id=" + selected.value[0].id;
+      // const downloadURL = "http://localhost:9000/fileStorage/download?id=" + selected.value[0].id;
       instance.testFileDownload(downloadURL).then(res => {
         window.location.href = downloadURL
       }).catch(e => {
@@ -154,7 +155,8 @@ function download() {
       // 排除所有文件夹
       const query = new URLSearchParams();
       downloadIds.forEach(id => query.append("id", id))
-      const downloadURL = "http://localhost:9000/fileStorage/downloadZip?" + query
+      const downloadURL = "https://shebei.xidian.edu.cn/fileStorage/downloadZip?" + query
+      // const downloadURL = "http://localhost:9000/fileStorage/downloadZip?" + query
       instance.testFileDownload(downloadURL).then(res => {
         window.location.href = downloadURL
       }).catch(e => {

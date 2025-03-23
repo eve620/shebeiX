@@ -3,10 +3,11 @@ package com.fin.system.util.excel;
 import com.alibaba.excel.context.AnalysisContext;
 import com.alibaba.excel.event.AnalysisEventListener;
 import com.alibaba.excel.util.ListUtils;
+import com.fin.system.entity.Item;
 import com.fin.system.service.ItemService;
 import java.util.List;
 
-public class ItemExcelListener extends AnalysisEventListener<ItemReadModel> {
+public class ItemExcelListener extends AnalysisEventListener<Item> {
     ItemService itemService;
 
 
@@ -22,11 +23,7 @@ public class ItemExcelListener extends AnalysisEventListener<ItemReadModel> {
     /**
      * 缓存的数据
      */
-    private List<ItemReadModel> cachedDataList = ListUtils.newArrayListWithExpectedSize(BATCH_COUNT);
-    /**
-     * 假设这个是一个DAO，当然有业务逻辑这个也可以是一个service。当然如果不用存储这个对象没用。
-     */
-    private ItemReadModel itemReadModel;
+    private List<Item> cachedDataList = ListUtils.newArrayListWithExpectedSize(BATCH_COUNT);
 
     /**
      * 这个每一条数据解析都会来调用
@@ -35,7 +32,7 @@ public class ItemExcelListener extends AnalysisEventListener<ItemReadModel> {
      * @param context
      */
     @Override
-    public void invoke(ItemReadModel data, AnalysisContext context) {
+    public void invoke(Item data, AnalysisContext context) {
         cachedDataList.add(data);
         // 达到BATCH_COUNT了，需要去存储一次数据库，防止数据几万条数据在内存，容易OOM
         if (cachedDataList.size() >= BATCH_COUNT) {
@@ -60,6 +57,6 @@ public class ItemExcelListener extends AnalysisEventListener<ItemReadModel> {
      * 加上存储数据库
      */
     private void saveData() {
-        itemService.saveBatch(cachedDataList);
+        itemService.save((Item) cachedDataList);
     }
 }

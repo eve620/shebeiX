@@ -18,7 +18,7 @@ public class ItemServiceImpl extends ServiceImpl<ItemMapper, Item> implements It
 
     @Override
     @Transactional
-    public void saveBatch(List<ItemReadModel> items) {
+    public void save(List<Item> items) {
         if (!items.isEmpty()) {
             itemService.saveBatch(items);
         }

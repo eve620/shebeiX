@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 
@@ -43,7 +45,9 @@ public class ItemController {
     @Autowired
     private ExcelProcessor excelProcessor;
     @GetMapping("/page")
-    public R<List<Item>> page(HttpServletRequest request, String year, String labName) {
+    public R<List<Item>> page(HttpServletRequest request, HttpServletResponse response, String year, String labName) {
+//        response.setHeader("Cache-Control", "max-age=3600"); // 浏览器缓存 1 小时
+
         UserInfo user = (UserInfo) request.getSession().getAttribute("userInfo");
         String userName = user.userName;
         int roleId = user.roleId;
@@ -60,6 +64,7 @@ public class ItemController {
         }
         //执行查询
         List<Item> items = itemService.list(queryWrapper);
+        response.setHeader("Cache-Control", "max-age=3600");
         return R.success(items);
     }
 
@@ -112,7 +117,6 @@ public class ItemController {
         WriteCellStyle contentWriteCellStyle = new WriteCellStyle();
         HorizontalCellStyleStrategy horizontalCellStyleStrategy =
                 new HorizontalCellStyleStrategy(headWriteCellStyle, contentWriteCellStyle);
-
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         response.setCharacterEncoding("utf-8");
         try (OutputStream outputStream = response.getOutputStream()) {
@@ -131,84 +135,86 @@ public class ItemController {
                 return R.error("仅支持Excel文件");
             }
 
-            List<Item> items = excelProcessor.parseExcel(file, year);
-
+//            List<Item> items = excelProcessor.parseExcel(file, year);
+//            System.out.println(items);
             //批量保存
-            itemService.saveBatch(items);
+//            itemService.save(items);
 
-//            InputStream inputStream = file.getInputStream();
-//            Workbook workbook;
-//            if (file.getOriginalFilename().endsWith(".xlsx")) {
-//                workbook = new XSSFWorkbook(inputStream);
-//            } else if (file.getOriginalFilename().endsWith(".xls")) {
-//                workbook = new HSSFWorkbook(inputStream);
-//            } else {
-//                return R.error("文件格式错误");
-//            }
-//            Sheet sheet = workbook.getSheetAt(0);
-//            int rowNum = 0; // 行号
-//            for (Row row : sheet) {
-//                if (rowNum == sheet.getLastRowNum()) break;
-//                //     跳过前两行，即标题行和字段行
-//                if (rowNum < 2) {
-//                    if (rowNum == 1) {
-//                        List<String> expectedHeaders = Arrays.asList(
-//                                "序号", "类别", "编号", "名称", "型号",
-//                                "采购人", "税额", "价值", "净值", "领用单位",
-//                                "领用人", "存放地", "出厂号", "现状", "入库日期",
-//                                "单位管理员备注", "财务凭单号", "备注"
-//                        );
-//                        for (int i = 0; i < row.getLastCellNum(); i++) {
-//                            Cell cell = row.getCell(i);
-//                            if (cell == null || cell.getCellType() != CellType.STRING || !cell.getStringCellValue().trim().equals(expectedHeaders.get(i))) {
-//                                return R.error("Excel格式错误");
-//                            }
-//                        }
-//                    }
-//                    rowNum++;
-//                    continue;
-//                }
-//
-//                String itemType = row.getCell(1).getStringCellValue();
-//                String itemNumber = row.getCell(2).getStringCellValue();
-//                String itemName = row.getCell(3).getStringCellValue();
-//                String itemModel = row.getCell(4).getStringCellValue();
-//                String itemPurchaser = row.getCell(5).getStringCellValue();
-//                String itemTax = row.getCell(6).getStringCellValue();
-//                String itemPrise = row.getCell(7).getStringCellValue();
-//                String itemNetworth = row.getCell(8).getStringCellValue();
-//                String itemUnit = row.getCell(9).getStringCellValue();
-//                String userName = row.getCell(10).getStringCellValue();
-//                String labName = row.getCell(11).getStringCellValue();
-//                String itemSerial = row.getCell(12).getStringCellValue();
-//                String itemState = row.getCell(13).getStringCellValue();
-//                String itemWarehousing = row.getCell(14).getStringCellValue();
-//                String itemUnitnote = row.getCell(15).getStringCellValue();
-//                String itemTracking = row.getCell(16).getStringCellValue();
-//                String itemNote = row.getCell(17).getStringCellValue();
-//                Item item = new Item();
-//                item.setItemType(itemType);
-//                item.setItemNumber(itemNumber);
-//                item.setItemName(itemName);
-//                item.setItemModel(itemModel);
-//                item.setItemPurchaser(itemPurchaser);
-//                item.setItemTax(itemTax);
-//                item.setItemPrice(itemPrise);
-//                item.setItemNetworth(itemNetworth);
-//                item.setItemUnit(itemUnit);
-//                item.setUserName(userName);
-//                item.setLabName(labName);
-//                item.setItemSerial(itemSerial);
-//                item.setItemStatus(itemState);
-//                item.setItemWarehousing(itemWarehousing);
-//                item.setItemUnitnote(itemUnitnote);
-//                item.setItemTracking(itemTracking);
-//                item.setItemNote(itemNote);
-//                item.setCheckYear(year);
-//                rowNum++;
-//                // 存入数据库
-//                itemService.save(item);
-//            }
+            InputStream inputStream = file.getInputStream();
+            Workbook workbook;
+            if (file.getOriginalFilename().endsWith(".xlsx")) {
+                workbook = new XSSFWorkbook(inputStream);
+            } else if (file.getOriginalFilename().endsWith(".xls")) {
+                workbook = new HSSFWorkbook(inputStream);
+            } else {
+                return R.error("文件格式错误");
+            }
+            Sheet sheet = workbook.getSheetAt(0);
+            int rowNum = 0; // 行号
+            for (Row row : sheet) {
+                //     跳过前两行，即标题行和字段行
+                if (rowNum < 2) {
+                    if (sheet.getLastRowNum()==0) return R.error("文件格式错误");;
+                    if (rowNum == 1) {
+                        List<String> expectedHeaders = Arrays.asList(
+                                "序号", "类别", "编号", "名称", "型号",
+                                "采购人", "税额", "价值", "净值", "领用单位",
+                                "领用人", "存放地", "出厂号", "现状", "入库日期",
+                                "单位管理员备注", "财务凭单号", "备注"
+                        );
+                        for (int i = 0; i < row.getLastCellNum(); i++) {
+                            Cell cell = row.getCell(i);
+                            if (cell == null || cell.getCellType() != CellType.STRING || !cell.getStringCellValue().trim().equals(expectedHeaders.get(i))) {
+                                return R.error("Excel格式错误");
+                            }
+                        }
+                    }
+                    rowNum++;
+                    continue;
+                }
+                if (rowNum == sheet.getLastRowNum()) break;
+
+                String itemType = getCellStringValue(row,1);
+                String itemNumber = getCellStringValue(row,2);
+                String itemName =getCellStringValue(row,3);
+                String itemModel = getCellStringValue(row,4);
+                String itemPurchaser = getCellStringValue(row,5);
+                String itemTax =getCellStringValue(row,6);
+                String itemPrise = getCellStringValue(row,7);
+                String itemNetworth =getCellStringValue(row,8);
+                String itemUnit =getCellStringValue(row,9);
+                String userName = getCellStringValue(row,10);
+                String labName = getCellStringValue(row,11);
+                String itemSerial =getCellStringValue(row,12);
+                String itemState = getCellStringValue(row,13);
+                String itemWarehousing = getCellStringValue(row,14);
+                String itemUnitnote = getCellStringValue(row,15);
+                String itemTracking = getCellStringValue(row,16);
+                String itemNote = getCellStringValue(row,17);
+                Item item = new Item();
+                item.setItemType(itemType);
+                item.setItemNumber(itemNumber);
+                item.setItemName(itemName);
+                item.setItemModel(itemModel);
+                item.setItemPurchaser(itemPurchaser);
+                item.setItemTax(itemTax);
+                item.setItemPrice(itemPrise);
+                item.setItemNetworth(itemNetworth);
+                item.setItemUnit(itemUnit);
+                item.setUserName(userName);
+                item.setLabName(labName);
+                item.setItemSerial(itemSerial);
+                item.setItemStatus(itemState);
+                item.setItemWarehousing(itemWarehousing);
+                item.setItemUnitnote(itemUnitnote);
+                item.setItemTracking(itemTracking);
+                item.setItemNote(itemNote);
+                item.setCheckYear(year);
+                rowNum++;
+                // 存入数据库
+                itemService.save(item);
+            }
+
         } catch (DataAccessException e) {
             // 检查具体的异常原因，看是否是唯一索引重复错误
             Throwable rootCause = ExceptionUtils.getRootCause(e);
@@ -227,6 +233,15 @@ public class ItemController {
     private boolean isExcelFile(MultipartFile file) {
         String filename = file.getOriginalFilename();
         return filename != null && (filename.endsWith(".xls") || filename.endsWith(".xlsx"));
+    }
+
+    private String getCellStringValue(Row row, int cellIndex) {
+        Cell cell = row.getCell(cellIndex);
+        if (cell != null) {
+            return cell.getStringCellValue();
+        } else {
+            return  "";
+        }
     }
 }
 
